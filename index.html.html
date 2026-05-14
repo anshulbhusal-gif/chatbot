@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediBot — Doctor Assistant & Recipe Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+
+
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --surface: #121826;
+    --surface2: #1a2235;
+    --surface3: #1f2a40;
+    --border: #263046;
+    --accent: #00d4aa;
+    --accent2: #0098f0;
+    --accent3: #ff6b9d;
+    --accent4: #ffc857;
+    --text: #e8edf5;
+    --text2: #8b97b0;
+    --text3: #5a6a85;
+    --bot-bubble: #1a2235;
+    --user-bubble: linear-gradient(135deg, #00d4aa22, #0098f022);
+    --user-border: #00d4aa55;
+    --radius: 18px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --glow: 0 0 20px rgba(0,212,170,0.15);
+  }
+
+  html.light {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #e8edf5;
+    --surface3: #dde3ed;
+    --border: #c8d0de;
+    --accent: #00b894;
+    --accent2: #0074d9;
+    --accent3: #e84393;
+    --accent4: #f0a500;
+    --text: #1a2235;
+    --text2: #4a5568;
+    --text3: #8b97b0;
+    --bot-bubble: #e8edf5;
+    --user-bubble: linear-gradient(135deg, #00b89422, #0074d922);
+    --user-border: #00b89455;
+    --shadow: 0 8px 32px rgba(0,0,0,0.12);
+    --glow: 0 0 20px rgba(0,184,148,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+
+
+  /* ─── APP ─────────────────────────────── */
+  #app {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* ─── SIDEBAR ─────────────────────────────── */
+  .sidebar {
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+    -webkit-text-fill-color: var(--text3);
+  }
+
+  .new-chat-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, var(--accent)22, var(--accent2)22);
+    border: 1px solid var(--accent)44;
+    color: var(--accent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .new-chat-btn:hover {
+    background: linear-gradient(135deg, var(--accent)33, var(--accent2)33);
+    box-shadow: var(--glow);
+  }
+
+  .history-label {
+    padding: 16px 20px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 10px 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .history-list::-webkit-scrollbar { width: 4px; }
+  .history-list::-webkit-scrollbar-track { background: transparent; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .history-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .history-item:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .history-item.active { background: var(--surface2); color: var(--accent); border-color: var(--accent)33; }
+  .history-item .h-icon { font-size: 14px; flex-shrink: 0; }
+  .history-item .h-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-item .h-date { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+
+  .history-item .delete-btn {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .history-item:hover .delete-btn { opacity: 1; }
+  .history-item .delete-btn:hover { color: var(--accent3); background: var(--accent3)22; }
+
+  .no-history {
+    text-align: center;
+    color: var(--text3);
+    font-size: 12px;
+    padding: 20px;
+    line-height: 1.6;
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .disclaimer-badge {
+    background: var(--accent3)15;
+    border: 1px solid var(--accent3)30;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--accent3);
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  /* ─── MAIN CHAT ─────────────────────────────── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg);
+  }
+
+  .chat-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface)aa;
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+  }
+
+  .chat-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .chat-subtitle { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px;
+    transition: background 0.2s, transform 0.2s;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { background: var(--surface3); transform: scale(1.1); }
+
+  .mobile-menu-btn {
+    display: none;
+    background: none; border: none;
+    color: var(--text2); font-size: 20px;
+    cursor: pointer; padding: 4px;
+  }
+
+  .messages-area {
+    flex: 1; overflow-y: auto;
+    padding: 24px;
+    display: flex; flex-direction: column;
+    gap: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .messages-area::-webkit-scrollbar { width: 4px; }
+  .messages-area::-webkit-scrollbar-track { background: transparent; }
+  .messages-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Welcome */
+  .welcome-screen {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex: 1; gap: 24px;
+    padding: 40px 20px;
+    text-align: center;
+    animation: fadeUp 0.5s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--accent)22, var(--accent2)22);
+    border: 1px solid var(--accent)44;
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    box-shadow: var(--glow);
+  }
+
+  .welcome-title {
+    font-size: 28px; font-weight: 700;
+    background: linear-gradient(135deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .welcome-sub { font-size: 14px; color: var(--text2); max-width: 400px; line-height: 1.6; }
+
+  .categories {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 12px; width: 100%; max-width: 560px;
+  }
+
+  .category-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px; cursor: pointer;
+    transition: all 0.2s; text-align: left;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  .category-card:hover {
+    border-color: var(--accent)55;
+    background: var(--surface2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .category-card .cat-icon { font-size: 24px; }
+  .category-card .cat-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .category-card .cat-desc { font-size: 12px; color: var(--text3); line-height: 1.4; }
+
+  .examples-grid { display: flex; flex-wrap: wrap; gap: 8px; max-width: 560px; }
+
+  .example-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 12px; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Sora', sans-serif;
+  }
+
+  .example-pill:hover { border-color: var(--accent)55; color: var(--accent); background: var(--accent)11; }
+
+  /* Message bubbles */
+  .message { display: flex; gap: 12px; animation: slideIn 0.3s ease; max-width: 100%; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; align-self: flex-end;
+  }
+
+  .bot-avatar { background: linear-gradient(135deg, var(--accent)33, var(--accent2)33); border: 1px solid var(--accent)44; }
+  .user-avatar { background: linear-gradient(135deg, var(--accent3)33, var(--accent4)33); border: 1px solid var(--accent3)44; }
+
+  .bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: calc(100% - 100px); }
+  .message.user .bubble-wrap { align-items: flex-end; }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 14px; line-height: 1.65;
+    word-break: break-word; max-width: 580px;
+  }
+
+  .bot .bubble { background: var(--bot-bubble); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+  .user .bubble { background: var(--surface2); border: 1px solid var(--user-border); border-bottom-right-radius: 4px; color: var(--text); }
+
+  .bubble-time { font-size: 10px; color: var(--text3); padding: 0 4px; font-family: 'JetBrains Mono', monospace; }
+
+  .bubble h3 { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .bubble p { margin-bottom: 6px; }
+  .bubble p:last-child { margin-bottom: 0; }
+
+  .warning-box {
+    background: var(--accent4)15;
+    border: 1px solid var(--accent4)40;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px; font-size: 12px;
+    color: var(--accent4); margin-top: 8px;
+    display: flex; gap: 8px; line-height: 1.5;
+  }
+
+  .disclaimer-box {
+    background: var(--accent3)12;
+    border: 1px solid var(--accent3)30;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px; font-size: 12px;
+    color: var(--accent3); margin-top: 10px; line-height: 1.5;
+  }
+
+  .recipe-card {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden; margin-top: 10px;
+  }
+
+  .recipe-img { width: 100%; height: 140px; object-fit: cover; display: block; }
+  .recipe-body { padding: 12px 14px; }
+  .recipe-title { font-weight: 700; color: var(--text); font-size: 15px; margin-bottom: 6px; }
+  .recipe-meta { font-size: 12px; color: var(--text3); margin-bottom: 8px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .recipe-meta span { display: flex; align-items: center; gap: 4px; }
+  .recipe-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: var(--accent)22; border: 1px solid var(--accent)44;
+    color: var(--accent); border-radius: 20px;
+    text-decoration: none; font-size: 12px; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .recipe-link:hover { background: var(--accent)33; }
+
+  .local-recipe-card {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 14px; margin-top: 10px;
+  }
+  .local-recipe-title { font-weight: 700; color: var(--accent); font-size: 15px; margin-bottom: 8px; }
+  .local-recipe-meta { font-size: 12px; color: var(--text3); margin-bottom: 10px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .local-recipe-section { margin-bottom: 10px; }
+  .local-recipe-section strong { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+  .local-recipe-section ul { list-style: none; padding: 0; }
+  .local-recipe-section ul li { font-size: 12px; color: var(--text2); padding: 2px 0; }
+  .local-recipe-section ul li::before { content: "• "; color: var(--accent); }
+
+  .joke-card {
+    background: var(--surface3);
+    border: 1px solid var(--accent4)44;
+    border-radius: var(--radius-sm);
+    padding: 14px; margin-top: 6px;
+    font-size: 14px; line-height: 1.6;
+  }
+  .joke-setup { color: var(--text2); margin-bottom: 8px; }
+  .joke-delivery { color: var(--accent4); font-weight: 600; font-size: 15px; }
+
+  .tag-chip {
+    display: inline-block;
+    background: var(--accent)22; color: var(--accent);
+    border: 1px solid var(--accent)33;
+    border-radius: 20px; padding: 2px 10px;
+    font-size: 11px; margin-right: 6px; font-weight: 500;
+  }
+
+  /* ── Health response enhancements ── */
+  .health-card {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: var(--radius-sm);
+    padding: 14px; margin: 8px 0;
+  }
+  .severity-bar { display: flex; gap: 5px; margin: 8px 0; align-items: center; }
+  .severity-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--border); transition: background 0.2s;
+  }
+  .severity-dot.mild { background: #00d4aa; }
+  .severity-dot.moderate { background: #ffc857; }
+  .severity-dot.severe { background: #ff6b9d; }
+  .severity-label { font-size: 11px; color: var(--text3); margin-left: 4px; }
+
+  .diet-tip-box {
+    background: var(--accent)10;
+    border: 1px solid var(--accent)30;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-top: 8px;
+    font-size: 12px; color: var(--text2); line-height: 1.6;
+  }
+  .diet-tip-box strong { color: var(--accent); display: block; margin-bottom: 4px; }
+
+  .related-recipes-box {
+    background: var(--accent2)10;
+    border: 1px solid var(--accent2)30;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-top: 8px;
+    font-size: 12px; color: var(--text2);
+  }
+  .related-recipes-box strong { color: var(--accent2); display: block; margin-bottom:6px; }
+  .rel-recipe-chip {
+    display: inline-block;
+    background: var(--accent2)15; color: var(--accent2);
+    border: 1px solid var(--accent2)33;
+    border-radius: 14px; padding: 3px 10px;
+    font-size: 11px; margin: 2px 3px 2px 0;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .rel-recipe-chip:hover { background: var(--accent2)30; }
+
+  /* ── Recipe enhancements ── */
+  .recipe-section-tabs { display: flex; gap: 6px; margin: 10px 0 6px; flex-wrap: wrap; }
+  .recipe-tab {
+    padding: 4px 12px; border-radius: 14px; font-size: 11px; font-weight: 500;
+    border: 1px solid var(--border); color: var(--text2); cursor: pointer;
+    background: var(--surface3); transition: all 0.15s;
+    font-family: 'Sora', sans-serif;
+  }
+  .recipe-tab.active, .recipe-tab:hover { border-color: var(--accent)55; color: var(--accent); background: var(--accent)15; }
+
+  .nutrition-grid {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 6px; margin: 8px 0;
+  }
+  .nutr-cell {
+    background: var(--surface2); border-radius: 8px;
+    padding: 7px 4px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  .nutr-val { font-size: 14px; font-weight: 700; color: var(--accent); }
+  .nutr-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  /* ── BMI tool ── */
+  .bmi-tool {
+    background: var(--surface3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-top: 8px;
+  }
+  .bmi-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .bmi-input {
+    flex: 1; min-width: 100px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 12px;
+    font-family: 'Sora', sans-serif; font-size: 13px;
+  }
+  .bmi-input:focus { outline: none; border-color: var(--accent)66; }
+  .bmi-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; color: #0b0f1a; border-radius: 8px;
+    padding: 8px 18px; font-family: 'Sora',sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .bmi-result {
+    font-size: 22px; font-weight: 700; color: var(--accent);
+    margin: 8px 0 4px; text-align: center;
+  }
+  .bmi-category { font-size: 13px; color: var(--text2); text-align: center; }
+
+  /* ── Ingredient filter pills ── */
+  .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter-pill {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 5px 12px; font-size: 12px;
+    color: var(--text2); cursor: pointer; transition: all 0.15s;
+    font-family: 'Sora', sans-serif;
+  }
+  .filter-pill:hover, .filter-pill.active { border-color: var(--accent)66; color: var(--accent); background: var(--accent)15; }
+
+  /* Typing indicator */
+  .typing-indicator { display: flex; gap: 12px; align-items: center; animation: slideIn 0.3s ease; }
+
+  .typing-dots {
+    display: flex; gap: 5px;
+    padding: 14px 18px;
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    border-bottom-left-radius: 4px;
+  }
+
+  .typing-dots span {
+    width: 7px; height: 7px;
+    background: var(--accent); border-radius: 50%;
+    animation: bounce 1.2s infinite; opacity: 0.6;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30% { transform: translateY(-8px); }
+  }
+
+  /* Input */
+  .input-area {
+    padding: 16px 24px 20px;
+    background: var(--surface)aa;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .input-wrap {
+    display: flex; gap: 10px; align-items: flex-end;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within { border-color: var(--accent)55; box-shadow: 0 0 0 3px var(--accent)10; }
+
+  #user-input {
+    flex: 1; background: none; border: none;
+    color: var(--text); font-family: 'Sora', sans-serif;
+    font-size: 14px; outline: none; resize: none;
+    max-height: 120px; min-height: 24px;
+    line-height: 1.5; scrollbar-width: none;
+  }
+
+  #user-input::placeholder { color: var(--text3); }
+  #user-input::-webkit-scrollbar { display: none; }
+
+  .send-btn {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+    color: #0b0f1a; font-size: 16px;
+  }
+
+  .send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0,212,170,0.4); }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .input-hint {
+    font-size: 11px; color: var(--text3);
+    margin-top: 8px; padding: 0 4px;
+    display: flex; justify-content: space-between;
+  }
+
+  /* Sidebar overlay (mobile) */
+  .sidebar-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 10;
+    backdrop-filter: blur(2px);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed; left: -100%; top: 0;
+      height: 100vh; z-index: 20;
+      transition: left 0.3s ease; width: 260px;
+    }
+    .sidebar.open { left: 0; }
+    .sidebar-overlay.show { display: block; }
+    .mobile-menu-btn { display: flex; }
+    .messages-area { padding: 16px; }
+    .input-area { padding: 12px 16px 16px; }
+    .chat-header { padding: 12px 16px; }
+    .categories { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .category-card { padding: 12px; }
+    .bubble-wrap { max-width: calc(100% - 50px); }
+    .bubble { font-size: 13px; }
+  }
+
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  *::-webkit-scrollbar { width: 4px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .fade-in { animation: fadeUp 0.4s ease; }
+</style>
+</head>
+<body>
+
+
+
+<!-- ─── MAIN APP ─────────────────────────────── -->
+<div id="app">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🏥</div>
+        <div>
+          <div class="logo-text">MediBot</div>
+          <div class="logo-sub">Health Companion</div>
+        </div>
+      </div>
+      <button class="new-chat-btn" onclick="startNewChat()">＋ New Conversation</button>
+    </div>
+
+    <div class="history-label">Chat History</div>
+    <div class="history-list" id="history-list">
+      <div class="no-history">No chats yet.<br>Start a conversation!</div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="disclaimer-badge">
+        ⚠️ For informational purposes only. Not a substitute for professional medical advice.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="chat-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-menu-btn" onclick="openSidebar()">☰</button>
+        <div>
+          <div class="chat-title" id="chat-title">New Conversation</div>
+          <div class="chat-subtitle">Doctor Assistant · Recipe Finder</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+        <div class="status-dot"></div>
+      </div>
+    </header>
+
+    <div class="messages-area" id="messages-area">
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-icon">🏥</div>
+        <div>
+          <div class="welcome-title">Hi, I'm MediBot!</div>
+          <div class="welcome-sub" style="margin-top:8px">
+            Your intelligent health companion. Get symptom advice, explore 95+ recipes, check your BMI, or find diet tips for any condition.
+          </div>
+        </div>
+
+        <div class="categories">
+          <div class="category-card" onclick="sendExample('I have a headache and fever')">
+            <div class="cat-icon">🩺</div>
+            <div class="cat-name">Doctor Assistant</div>
+            <div class="cat-desc">Describe symptoms for detailed health advice, severity ratings & diet tips</div>
+          </div>
+          <div class="category-card" onclick="sendExample('Find me a paneer recipe')">
+            <div class="cat-icon">🍽️</div>
+            <div class="cat-name">Recipe Finder</div>
+            <div class="cat-desc">95+ recipes — Indian, Italian, Asian & more with ingredients & steps</div>
+          </div>
+          <div class="category-card" onclick="sendExample('Calculate my BMI')">
+            <div class="cat-icon">⚖️</div>
+            <div class="cat-name">BMI Calculator</div>
+            <div class="cat-desc">Know your Body Mass Index and get personalised health tips</div>
+          </div>
+          <div class="category-card" onclick="sendExample('What foods should I eat for diabetes?')">
+            <div class="cat-icon">🥗</div>
+            <div class="cat-name">Diet & Nutrition</div>
+            <div class="cat-desc">Condition-specific diet guidance and healthy eating advice</div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="user-input" rows="1" placeholder="Describe symptoms, search recipes, check BMI…" 
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="input-hint">
+        <span>Press Enter to send · Shift+Enter for new line</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  THEME
+// ═══════════════════════════════════════════════════
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('medibot-theme', isLight ? 'light' : 'dark');
+}
+
+(function() {
+  if (localStorage.getItem('medibot-theme') === 'light') {
+    document.documentElement.classList.add('light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
+
+// ═══════════════════════════════════════════════════
+//  LOCAL RECIPE DATABASE (95 recipes — 50+ Indian)
+// ═══════════════════════════════════════════════════
+
+const LOCAL_RECIPES = [
+  // Indian
+  { name: "Butter Chicken (Murgh Makhani)", cuisine: "🇮🇳 Indian", time: "45 min", servings: 4, tags: ["chicken","butter","indian","curry"],
+    ingredients: ["500g chicken thighs", "1 cup yogurt", "2 tbsp butter", "1 cup tomato puree", "1 cup heavy cream", "2 tsp garam masala", "1 tsp turmeric", "1 tsp cumin", "Salt to taste"],
+    steps: ["Marinate chicken in yogurt + spices for 1 hour.", "Grill or pan-fry chicken until cooked.", "Sauté onions, add tomato puree, cook 10 min.", "Add cream, butter, and cooked chicken.", "Simmer 15 min. Serve with naan or rice."] },
+  { name: "Dal Tadka", cuisine: "🇮🇳 Indian", time: "30 min", servings: 4, tags: ["lentils","dal","vegetarian","indian"],
+    ingredients: ["1 cup yellow lentils", "2 tomatoes", "1 onion", "3 garlic cloves", "1 tsp cumin", "1 tsp turmeric", "1 tsp chili powder", "2 tbsp ghee", "Salt"],
+    steps: ["Boil lentils until soft (15 min).", "Heat ghee, add cumin, garlic, onion — sauté until golden.", "Add tomatoes and spices, cook 5 min.", "Pour tadka over lentils, mix, simmer 5 min."] },
+  { name: "Palak Paneer", cuisine: "🇮🇳 Indian", time: "35 min", servings: 3, tags: ["spinach","paneer","vegetarian","indian"],
+    ingredients: ["200g paneer", "300g spinach", "1 onion", "2 garlic cloves", "1 tsp ginger", "1 tsp garam masala", "2 tbsp cream", "1 tbsp oil"],
+    steps: ["Blanch spinach, blend to puree.", "Sauté onion, garlic, ginger in oil.", "Add spinach puree, spices, cook 8 min.", "Add cubed paneer and cream, simmer 5 min."] },
+  { name: "Chana Masala", cuisine: "🇮🇳 Indian", time: "40 min", servings: 4, tags: ["chickpeas","vegan","indian","protein"],
+    ingredients: ["2 cups canned chickpeas", "2 tomatoes", "1 onion", "2 garlic cloves", "1 tsp cumin", "2 tsp chole masala", "1 tbsp oil", "Coriander for garnish"],
+    steps: ["Sauté onion, garlic in oil until golden.", "Add tomatoes, cook until soft.", "Add chickpeas and spices, mix well.", "Add ½ cup water, simmer 15 min. Garnish with coriander."] },
+  { name: "Masala Dosa", cuisine: "🇮🇳 South Indian", time: "50 min", servings: 4, tags: ["dosa","potato","breakfast","indian","vegan"],
+    ingredients: ["2 cups dosa batter", "4 boiled potatoes", "1 onion", "1 tsp mustard seeds", "1 tsp turmeric", "Curry leaves", "Oil", "Salt"],
+    steps: ["Mash potatoes with sautéed onion, mustard, turmeric, curry leaves for filling.", "Heat tava, pour batter in thin circle.", "Drizzle oil, cook until crispy.", "Place potato filling, fold and serve with sambar and chutney."] },
+  { name: "Chicken Biryani", cuisine: "🇮🇳 Indian", time: "90 min", servings: 6, tags: ["chicken","rice","biryani","indian"],
+    ingredients: ["500g chicken", "2 cups basmati rice", "1 cup yogurt", "2 onions", "2 tsp biryani masala", "Saffron in warm milk", "Mint leaves", "Ghee", "Bay leaves"],
+    steps: ["Marinate chicken in yogurt + biryani masala 1 hour.", "Fry onions until golden.", "Par-cook rice with whole spices to 70%.", "Layer chicken, rice, onions, mint in pot.", "Pour saffron milk, seal and dum cook 30 min."] },
+  { name: "Aloo Gobi", cuisine: "🇮🇳 Indian", time: "30 min", servings: 3, tags: ["potato","cauliflower","vegan","indian"],
+    ingredients: ["2 potatoes", "1 cauliflower head", "1 onion", "1 tsp cumin", "1 tsp turmeric", "1 tsp coriander powder", "2 tbsp oil"],
+    steps: ["Heat oil, add cumin, sauté onion.", "Add potato and cauliflower florets.", "Add spices, mix well.", "Cover and cook 20 min until tender."] },
+  { name: "Rajma (Red Kidney Bean Curry)", cuisine: "🇮🇳 Indian", time: "45 min", servings: 4, tags: ["rajma","kidney beans","vegetarian","indian","punjabi"],
+    ingredients: ["2 cups boiled kidney beans", "2 onions", "3 tomatoes", "2 tsp ginger-garlic paste", "1 tsp cumin", "1 tsp chole masala", "1 tsp red chili powder", "2 tbsp oil", "Salt", "Coriander for garnish"],
+    steps: ["Heat oil, add cumin, sauté onions until golden brown.", "Add ginger-garlic paste, cook 2 min.", "Add tomatoes and spices, cook until oil separates.", "Add boiled rajma with 1 cup water, mash a few beans.", "Simmer 15 min. Garnish with coriander. Serve with rice."] },
+  { name: "Paneer Butter Masala", cuisine: "🇮🇳 Indian", time: "35 min", servings: 3, tags: ["paneer","butter","indian","vegetarian","curry"],
+    ingredients: ["250g paneer", "2 onions", "3 tomatoes", "2 tbsp butter", "1 cup cream", "2 tsp kashmiri red chili", "1 tsp garam masala", "1 tsp kasuri methi", "1 tbsp cashews", "Salt"],
+    steps: ["Blend boiled onions, tomatoes, and cashews into a smooth paste.", "Heat butter, cook the paste 10 min.", "Add kashmiri chili, garam masala, salt.", "Add cream and kasuri methi, simmer 5 min.", "Add paneer cubes, cook 5 more min. Serve with naan."] },
+  { name: "Samosa (Baked/Fried)", cuisine: "🇮🇳 Indian", time: "60 min", servings: 10, tags: ["samosa","potato","snack","indian","street food"],
+    ingredients: ["2 cups maida/all-purpose flour", "4 boiled potatoes", "1/2 cup peas", "1 tsp cumin", "1 tsp amchur", "1 tsp garam masala", "1 tsp ginger", "Oil for frying", "Salt"],
+    steps: ["Make stiff dough with flour, oil, ajwain and salt. Rest 30 min.", "Mash potatoes with peas and spices for filling.", "Roll dough into oval, cut in half, form cone.", "Fill with potato mixture, seal edges well.", "Deep fry on medium heat until golden. Serve with chutney."] },
+  { name: "Chole Bhature", cuisine: "🇮🇳 Punjabi", time: "60 min", servings: 4, tags: ["chole","bhature","chickpeas","indian","punjabi"],
+    ingredients: ["2 cups boiled chickpeas", "2 cups maida", "1/2 cup yogurt", "2 onions", "3 tomatoes", "2 tsp chole masala", "1 tsp black cardamom", "Anardana powder", "Oil", "Salt"],
+    steps: ["Knead soft dough with maida, yogurt, salt, baking soda. Rest 2 hr.", "For chole: sauté onions, add tomatoes and spices, cook chickpeas 20 min.", "Roll bhature into thick ovals.", "Deep fry until puffed and golden.", "Serve hot bhature with chole and sliced onion."] },
+  { name: "Pav Bhaji", cuisine: "🇮🇳 Mumbai Street Food", time: "40 min", servings: 4, tags: ["pav bhaji","street food","vegetarian","indian","mumbai"],
+    ingredients: ["4 potatoes", "1 cup peas", "2 capsicums", "2 onions", "3 tomatoes", "3 tbsp butter", "2 tsp pav bhaji masala", "Pav (dinner rolls)", "Lemon", "Coriander"],
+    steps: ["Boil and mash all vegetables together.", "Sauté onions and capsicum in butter, add tomatoes.", "Add mashed veggies and pav bhaji masala, cook 10 min, mashing continuously.", "Add more butter and water for desired consistency.", "Toast pav with butter. Serve bhaji topped with butter, onion, lemon."] },
+  { name: "Pulao (Vegetable Rice)", cuisine: "🇮🇳 Indian", time: "30 min", servings: 3, tags: ["pulao","rice","vegetarian","indian","quick"],
+    ingredients: ["1.5 cups basmati rice", "1 carrot", "1/2 cup peas", "1 onion", "2 bay leaves", "4 cloves", "1 cinnamon stick", "1 tsp cumin", "2 tbsp ghee", "2.5 cups water", "Salt"],
+    steps: ["Wash and soak rice 20 min.", "Heat ghee, add whole spices and onion, sauté golden.", "Add vegetables, mix well.", "Add soaked rice and water, season with salt.", "Cover and cook 15 min on low. Fluff and serve."] },
+  { name: "Kadai Chicken", cuisine: "🇮🇳 Indian", time: "45 min", servings: 4, tags: ["chicken","kadai","indian","curry","spicy"],
+    ingredients: ["500g chicken", "2 onions", "3 tomatoes", "1 capsicum", "2 tsp kadai masala", "1 tsp coriander seeds", "1 tsp kashmiri chili", "2 tbsp oil", "Ginger julienne", "Coriander"],
+    steps: ["Dry roast and grind coriander seeds and red chilies.", "Sauté onions in oil until golden.", "Add tomatoes, cook until mushy.", "Add chicken and all spices, cook on high 5 min.", "Add capsicum and ginger, simmer 20 min. Garnish generously."] },
+  { name: "Matar Paneer", cuisine: "🇮🇳 Indian", time: "35 min", servings: 3, tags: ["paneer","peas","vegetarian","indian","curry"],
+    ingredients: ["200g paneer", "1 cup green peas", "2 onions", "2 tomatoes", "1 tsp ginger-garlic paste", "1 tsp coriander powder", "1 tsp cumin", "1/2 tsp garam masala", "2 tbsp oil", "Salt"],
+    steps: ["Fry paneer cubes until golden, set aside.", "Sauté onions, add ginger-garlic paste.", "Add tomatoes and all spices, cook until oil separates.", "Add peas and 1 cup water, simmer 10 min.", "Add fried paneer, cook 5 min. Serve with roti."] },
+  { name: "Poha (Flattened Rice)", cuisine: "🇮🇳 Indian", time: "15 min", servings: 2, tags: ["poha","breakfast","vegetarian","indian","quick","maharashtrian"],
+    ingredients: ["2 cups thick poha (flattened rice)", "1 onion", "1 potato", "1/2 cup peas", "1 tsp mustard seeds", "1 tsp turmeric", "8-10 curry leaves", "2 tbsp oil", "Lemon juice", "Coriander", "Sev for topping"],
+    steps: ["Rinse poha in water, drain and set aside (5 min).", "Heat oil, add mustard seeds, curry leaves, green chili.", "Add onion and potato, cook until potato is soft.", "Add peas and turmeric, cook 2 min.", "Add poha, lemon juice, salt. Mix gently. Garnish with coriander and sev."] },
+  { name: "Rasam", cuisine: "🇮🇳 South Indian", time: "25 min", servings: 4, tags: ["rasam","soup","south indian","vegan","tamarind"],
+    ingredients: ["1/4 cup tamarind extract", "1 tsp cumin", "1 tsp black pepper", "2 garlic cloves", "2 tomatoes", "1/2 tsp turmeric", "1 tsp rasam powder", "Curry leaves", "Mustard seeds", "Coriander", "Salt"],
+    steps: ["Boil tamarind extract with tomatoes, turmeric and salt.", "Add rasam powder and crushed garlic, simmer 10 min.", "In a small pan, heat oil and temper mustard, cumin, curry leaves.", "Pour tadka over rasam.", "Serve hot as a soup or over rice."] },
+  { name: "Idli Sambar", cuisine: "🇮🇳 South Indian", time: "30 min", servings: 4, tags: ["idli","sambar","south indian","breakfast","vegetarian"],
+    ingredients: ["2 cups idli batter", "1 cup toor dal", "1 drumstick", "1 onion", "1 tomato", "2 tbsp sambar powder", "Tamarind extract", "Mustard seeds", "Curry leaves", "Oil", "Salt"],
+    steps: ["Steam idli batter in moulds for 10-12 min.", "Pressure cook toor dal until soft.", "Cook drumstick, onion, tomato with sambar powder and tamarind.", "Add cooked dal, adjust consistency, simmer 10 min.", "Temper with mustard and curry leaves. Serve idlis with sambar and coconut chutney."] },
+  { name: "Saag (Sarson Ka Saag)", cuisine: "🇮🇳 Punjabi", time: "60 min", servings: 4, tags: ["saag","mustard greens","spinach","punjabi","indian","winter"],
+    ingredients: ["500g mustard greens (sarson)", "200g spinach", "100g bathua leaves", "2 onions", "3 garlic cloves", "1 tbsp ginger", "2 green chilies", "2 tbsp ghee", "2 tbsp makki atta (corn flour)", "Salt"],
+    steps: ["Boil all greens until very soft, drain and blend coarsely.", "Heat ghee, sauté garlic, ginger, onion, chili until golden.", "Add blended greens, mix well.", "Add corn flour paste, cook 20 min on low, stirring often.", "Serve hot with makki di roti and a knob of white butter."] },
+  { name: "Kheer (Rice Pudding)", cuisine: "🇮🇳 Indian Dessert", time: "45 min", servings: 4, tags: ["kheer","dessert","sweet","indian","rice pudding"],
+    ingredients: ["1 litre full-fat milk", "1/4 cup basmati rice", "4 tbsp sugar", "8-10 saffron strands", "1/4 tsp cardamom powder", "10 cashews", "10 raisins", "10 almonds", "Rose water (optional)"],
+    steps: ["Wash rice, soak 20 min.", "Bring milk to boil in heavy pan, add drained rice.", "Cook on low-medium heat, stirring frequently, 25-30 min until thickened.", "Add sugar, saffron, cardamom, nuts and raisins.", "Simmer 5 more min. Serve warm or chilled."] },
+  { name: "Gajar Ka Halwa (Carrot Halwa)", cuisine: "🇮🇳 Indian Dessert", time: "50 min", servings: 6, tags: ["halwa","carrot","dessert","sweet","indian","winter"],
+    ingredients: ["1 kg carrots (grated)", "1 litre full-fat milk", "1/2 cup sugar", "4 tbsp ghee", "1/2 tsp cardamom powder", "10 cashews", "10 almonds", "10 raisins", "Khoya (optional) 100g"],
+    steps: ["Cook grated carrots in milk on medium heat, stirring often, until milk evaporates (30 min).", "Add ghee, sauté carrot mixture 10 min.", "Add sugar and khoya, mix well.", "Add cardamom powder and roasted nuts.", "Serve warm garnished with silver foil and nuts."] },
+
+  // More Indian Dishes
+  { name: "Bhindi Masala (Okra Stir Fry)", cuisine: "🇮🇳 Indian", time: "25 min", servings: 3, tags: ["bhindi","okra","vegetarian","indian","stir fry"],
+    ingredients: ["400g bhindi (okra)", "2 onions", "2 tomatoes", "1 tsp cumin seeds", "1 tsp coriander powder", "1/2 tsp amchur", "1 tsp red chili powder", "2 tbsp oil", "Salt"],
+    steps: ["Wash and dry bhindi, chop into 1-inch pieces.", "Heat oil, add cumin seeds, sauté onions until golden.", "Add tomatoes and spices, cook 5 min.", "Add bhindi, mix well, cook uncovered on medium heat 15 min stirring occasionally.", "Sprinkle amchur, serve hot with roti."] },
+  { name: "Aloo Paratha", cuisine: "🇮🇳 Punjabi", time: "40 min", servings: 4, tags: ["paratha","potato","breakfast","punjabi","indian"],
+    ingredients: ["2 cups whole wheat flour", "3 boiled potatoes (mashed)", "1 tsp cumin seeds", "1 tsp garam masala", "1 tsp amchur", "2 green chilies (chopped)", "Fresh coriander", "Ghee", "Salt"],
+    steps: ["Knead dough with flour, salt, and water. Rest 20 min.", "Mix mashed potatoes with spices, chilies, coriander for filling.", "Divide dough into balls, roll out, place filling in center, seal and roll again gently.", "Cook on hot tawa with ghee until golden on both sides.", "Serve hot with butter, curd, and pickle."] },
+  { name: "Methi Thepla", cuisine: "🇮🇳 Gujarati", time: "30 min", servings: 6, tags: ["thepla","methi","fenugreek","gujarati","breakfast","indian"],
+    ingredients: ["2 cups whole wheat flour", "1 cup fresh methi leaves (chopped)", "1/2 cup yogurt", "1 tsp turmeric", "1 tsp red chili powder", "1 tsp sesame seeds", "1 tsp oil", "Salt"],
+    steps: ["Combine flour, methi, yogurt, spices, and oil.", "Knead into soft dough, adding water as needed.", "Divide into balls, roll into thin rounds.", "Cook on hot tawa with a little oil until lightly browned on both sides.", "Serve with curd and chutney or pickle."] },
+  { name: "Vada Pav", cuisine: "🇮🇳 Mumbai Street Food", time: "45 min", servings: 6, tags: ["vada pav","street food","potato","indian","mumbai","snack"],
+    ingredients: ["4 boiled potatoes (mashed)", "1 tsp mustard seeds", "Curry leaves", "1 tsp turmeric", "2 green chilies", "Garlic paste", "1 cup besan (gram flour)", "Pav (dinner rolls)", "Green chutney", "Tamarind chutney", "Oil for frying"],
+    steps: ["Sauté mustard seeds, curry leaves, garlic, green chili in oil. Mix with mashed potatoes.", "Add turmeric and salt; shape into balls.", "Make batter with besan, turmeric, water, and salt.", "Dip potato balls in batter; deep fry until golden.", "Slit pav, apply chutneys, place vada inside. Serve immediately."] },
+  { name: "Dhokla", cuisine: "🇮🇳 Gujarati", time: "40 min", servings: 6, tags: ["dhokla","gujarati","breakfast","snack","steamed","vegetarian"],
+    ingredients: ["1 cup besan (gram flour)", "3/4 cup yogurt", "1 tsp ginger paste", "1 tbsp lemon juice", "1 tsp Eno fruit salt", "1 tsp mustard seeds", "Curry leaves", "Green chilies", "Sugar", "Oil", "Coriander for garnish"],
+    steps: ["Mix besan, yogurt, ginger, lemon juice, salt into smooth batter. Rest 10 min.", "Add Eno just before steaming, mix gently.", "Pour into greased plate, steam 15-18 min until toothpick comes out clean.", "Prepare tempering: heat oil, add mustard, curry leaves, green chili.", "Pour tempering over dhokla. Garnish with coriander and coconut. Cut and serve."] },
+  { name: "Kachori (Dal Kachori)", cuisine: "🇮🇳 Rajasthani", time: "60 min", servings: 8, tags: ["kachori","dal","rajasthani","snack","fried","indian"],
+    ingredients: ["2 cups maida", "1/2 cup urad dal (soaked)", "1 tsp fennel seeds", "1 tsp red chili powder", "1 tsp coriander powder", "1/2 tsp asafoetida", "Oil for frying", "Salt"],
+    steps: ["Knead stiff dough with maida, 2 tbsp oil, salt, and water. Rest 30 min.", "Cook urad dal with spices, fennel, asafoetida until dry for filling.", "Divide dough into balls, flatten, stuff with dal mixture, seal and flatten gently.", "Deep fry on low-medium heat until crispy and golden.", "Serve with tamarind chutney and green chutney."] },
+  { name: "Pesarattu (Green Moong Dosa)", cuisine: "🇮🇳 Andhra", time: "30 min", servings: 4, tags: ["pesarattu","moong","dosa","andhra","breakfast","indian"],
+    ingredients: ["1 cup whole green moong dal (soaked overnight)", "1/2 cup rice", "2 green chilies", "1 tsp ginger", "1 onion (finely chopped)", "Cumin seeds", "Salt", "Oil"],
+    steps: ["Grind soaked moong dal, rice, chilies, ginger with water into smooth batter.", "Add salt and cumin seeds.", "Heat tawa, pour batter, spread thin and round.", "Sprinkle chopped onion on top, drizzle oil.", "Cook until crispy. Serve with ginger chutney and upma."] },
+  { name: "Misal Pav", cuisine: "🇮🇳 Maharashtrian", time: "45 min", servings: 4, tags: ["misal pav","sprouted","maharashtrian","street food","indian"],
+    ingredients: ["1 cup sprouted moth beans (matki)", "1 onion", "2 tomatoes", "1 tsp goda masala", "1 tsp red chili powder", "1 tsp ginger-garlic paste", "Farsan/sev", "Lemon", "Pav", "Coriander", "Oil"],
+    steps: ["Pressure cook sprouted matki for 2 whistles.", "Heat oil, sauté onion, add ginger-garlic paste, tomatoes, goda masala, chili powder.", "Add cooked matki and water, simmer 10 min to form spicy curry (kat).", "Serve in a bowl: matki curry topped with farsan, onion, coriander, lemon.", "Eat with buttered pav."] },
+  { name: "Upma", cuisine: "🇮🇳 South Indian", time: "20 min", servings: 3, tags: ["upma","semolina","south indian","breakfast","quick","indian"],
+    ingredients: ["1 cup semolina (sooji/rava)", "1 onion", "2 green chilies", "Curry leaves", "1 tsp mustard seeds", "1 tsp urad dal", "Ginger", "2 cups water", "2 tbsp oil", "Salt", "Coriander", "Lemon juice"],
+    steps: ["Dry roast semolina until light golden, set aside.", "Heat oil, temper mustard seeds, urad dal, curry leaves.", "Add onion, green chili, ginger; sauté until translucent.", "Add water and salt, bring to boil.", "Stir in semolina slowly, mix well until thick. Cover and cook 3 min. Finish with lemon juice."] },
+  { name: "Baingan Bharta (Smoked Eggplant)", cuisine: "🇮🇳 Punjabi", time: "40 min", servings: 3, tags: ["baingan","eggplant","brinjal","punjabi","vegan","indian"],
+    ingredients: ["2 large eggplants (brinjal)", "2 onions", "3 tomatoes", "2 tsp ginger-garlic paste", "1 tsp cumin", "1 tsp red chili powder", "1 tsp garam masala", "2 tbsp oil", "Fresh coriander"],
+    steps: ["Roast eggplant directly on flame until skin is charred and inside is soft. Cool, peel, mash.", "Sauté cumin and onions in oil until golden.", "Add ginger-garlic paste, tomatoes, and spices; cook 10 min.", "Add mashed eggplant, mix and cook 8 min.", "Garnish with coriander. Serve with roti or naan."] },
+  { name: "Lauki Kofta Curry", cuisine: "🇮🇳 Indian", time: "50 min", servings: 4, tags: ["lauki","bottle gourd","kofta","vegetarian","indian"],
+    ingredients: ["500g bottle gourd (lauki)", "1/2 cup besan", "2 onions", "3 tomatoes", "1 tsp ginger-garlic paste", "1 tsp garam masala", "1 tsp red chili powder", "2 tbsp oil", "Salt", "Coriander"],
+    steps: ["Grate lauki, squeeze water, mix with besan, spices, and salt. Shape into balls.", "Deep fry or air fry koftas until golden.", "Make curry: sauté onions, add ginger-garlic, tomatoes, spices.", "Add water, simmer 10 min, add koftas and cook 5 more min.", "Garnish with coriander. Serve with rice or naan."] },
+  { name: "Shahi Paneer", cuisine: "🇮🇳 Mughlai", time: "40 min", servings: 4, tags: ["paneer","mughlai","shahi","indian","vegetarian","rich"],
+    ingredients: ["300g paneer", "2 onions", "3 tomatoes", "1/2 cup cashews", "1 cup cream", "2 tbsp ghee", "1 tsp turmeric", "2 tsp shahi garam masala", "Saffron", "Rose water", "Salt"],
+    steps: ["Blend boiled onions, tomatoes, and cashews into smooth paste.", "Heat ghee, cook paste until fragrant.", "Add turmeric, shahi garam masala, saffron, and salt.", "Add cream, simmer 5 min.", "Add paneer cubes, finish with rose water. Serve with naan."] },
+  { name: "Vegetable Korma", cuisine: "🇮🇳 Indian", time: "40 min", servings: 4, tags: ["korma","vegetable","indian","mild","vegetarian"],
+    ingredients: ["2 cups mixed vegetables (carrot, peas, potato, beans)", "1/2 cup cashews (soaked)", "2 onions", "1/2 cup coconut milk", "1/2 cup yogurt", "1 tsp cardamom", "1 tsp garam masala", "2 tbsp ghee", "Rose water"],
+    steps: ["Blend cashews and onions into paste.", "Heat ghee, cook paste 8 min.", "Add boiled vegetables, spices, yogurt.", "Add coconut milk, simmer 10 min.", "Finish with rose water. Serve with rice or roti."] },
+  { name: "Tandoori Chicken", cuisine: "🇮🇳 Indian", time: "60 min", servings: 4, tags: ["tandoori","chicken","grilled","indian","bbq"],
+    ingredients: ["1 whole chicken (cut into pieces)", "1 cup yogurt", "2 tbsp tandoori masala", "1 tbsp kashmiri chili", "1 tsp turmeric", "1 tbsp ginger-garlic paste", "1 tbsp lemon juice", "2 tbsp oil"],
+    steps: ["Make cuts on chicken pieces for marinade to penetrate.", "Mix yogurt, spices, ginger-garlic paste, lemon juice; coat chicken thoroughly.", "Marinate 4-6 hours (overnight best).", "Grill, bake at 220°C, or cook on tawa until charred and cooked through.", "Serve with lemon, onion rings, green chutney and naan."] },
+  { name: "Tawa Pulao", cuisine: "🇮🇳 Mumbai", time: "25 min", servings: 3, tags: ["tawa pulao","rice","mumbai","street food","indian"],
+    ingredients: ["2 cups cooked basmati rice", "1 onion", "1 capsicum", "2 tomatoes", "1/2 cup peas", "2 tsp pav bhaji masala", "1 tbsp butter", "Lemon", "Coriander"],
+    steps: ["Heat butter on tawa, sauté onions and capsicum.", "Add tomatoes and pav bhaji masala; cook 5 min.", "Add peas and cooked rice, mix well on high flame.", "Squeeze lemon, toss everything together.", "Garnish with coriander and serve hot."] },
+  { name: "Kadhi Pakoda", cuisine: "🇮🇳 Punjabi", time: "50 min", servings: 4, tags: ["kadhi","yogurt","pakoda","punjabi","indian","comfort"],
+    ingredients: ["1 cup sour yogurt", "3 tbsp besan", "1 onion", "1 tsp turmeric", "1 tsp red chili powder", "Curry leaves", "Mustard seeds", "1 tsp fenugreek seeds", "2 tbsp oil", "Salt"],
+    steps: ["Whisk yogurt with besan, turmeric, salt, and 3 cups water.", "Heat oil, add mustard, fenugreek, curry leaves, pour in yogurt mixture.", "Simmer on low heat 25-30 min, stirring occasionally.", "Make pakodas: mix besan, onion, spices, fry small balls.", "Add pakodas to kadhi, simmer 5 min. Serve with rice."] },
+  { name: "Moong Dal Halwa", cuisine: "🇮🇳 Indian Dessert", time: "60 min", servings: 6, tags: ["moong dal","halwa","dessert","sweet","indian","rajasthani"],
+    ingredients: ["1 cup yellow moong dal (soaked, ground)", "1 cup sugar", "4 tbsp ghee", "1/2 cup khoya", "1/4 tsp cardamom powder", "Cashews", "Almonds", "Raisins", "Saffron"],
+    steps: ["Sauté ground moong dal in ghee on low heat, stirring constantly until golden (25-30 min).", "Add khoya, mix and cook 5 min.", "In another pan, make sugar syrup with 1 cup water.", "Add sugar syrup to dal mixture, mix vigorously.", "Add cardamom, saffron, nuts. Serve warm."] },
+  { name: "Gulab Jamun", cuisine: "🇮🇳 Indian Dessert", time: "45 min", servings: 12, tags: ["gulab jamun","dessert","sweet","indian","festival"],
+    ingredients: ["1 cup milk powder", "3 tbsp maida", "1 tbsp ghee", "2-3 tbsp milk", "1/4 tsp baking soda", "1 cup sugar", "3/4 cup water", "4-5 cardamom pods", "Rose water"],
+    steps: ["Make dough: mix milk powder, maida, baking soda, ghee, add milk gradually. Knead gently.", "Prepare sugar syrup: dissolve sugar in water, add cardamom, rose water, simmer 10 min.", "Shape dough into smooth balls.", "Deep fry on low heat, turning constantly, until deep brown.", "Add to warm syrup, soak at least 30 min before serving."] },
+  { name: "Ras Malai", cuisine: "🇮🇳 Bengali Dessert", time: "60 min", servings: 8, tags: ["ras malai","dessert","sweet","bengali","indian","milk"],
+    ingredients: ["1 litre full-fat milk", "1 tsp vinegar or lemon juice", "1 litre full-fat milk (for rasmalai)", "3/4 cup sugar", "Saffron", "Pistachios", "Cardamom", "Rose water"],
+    steps: ["Boil milk, add vinegar to curdle, drain in muslin cloth.", "Knead chena until smooth; shape into flat discs.", "Boil discs in sugar syrup for 15 min until doubled in size.", "Prepare rabdi: reduce 1 litre milk by half with sugar, saffron, cardamom.", "Add chena pieces to cold rabdi, refrigerate 2 hours. Garnish with pistachios."] },
+  { name: "Jalebi", cuisine: "🇮🇳 Indian Dessert", time: "30 min", servings: 6, tags: ["jalebi","sweet","dessert","indian","crispy"],
+    ingredients: ["1 cup maida", "1/4 cup corn flour", "1 tsp yeast", "1 cup sugar", "1/2 cup water", "Saffron", "Cardamom", "Food color (optional)", "Oil for frying"],
+    steps: ["Prepare batter: mix flour, corn flour, yeast, and warm water; ferment 2 hours.", "Make sugar syrup: dissolve sugar in water with saffron and cardamom.", "Heat oil; pipe batter in spirals into hot oil.", "Fry until crisp, immediately dip in warm syrup.", "Serve hot with rabdi."] },
+  { name: "Besan Ladoo", cuisine: "🇮🇳 Indian Dessert", time: "35 min", servings: 15, tags: ["ladoo","besan","dessert","sweet","festival","indian"],
+    ingredients: ["2 cups besan (gram flour)", "1 cup powdered sugar", "6 tbsp ghee", "1/4 tsp cardamom powder", "Cashews", "Raisins"],
+    steps: ["Dry roast besan in a heavy pan on low heat, stirring constantly until aromatic and golden (20 min).", "Remove from heat, add ghee and mix.", "Let cool slightly, add powdered sugar, cardamom, cashews, raisins.", "When cool enough to handle, shape into balls.", "Store in airtight container."] },
+  { name: "Pani Puri (Golgappa)", cuisine: "🇮🇳 Street Food", time: "30 min", servings: 4, tags: ["pani puri","golgappa","street food","indian","chaat"],
+    ingredients: ["20 puris (readymade)", "2 cups sprouted moong", "2 boiled potatoes", "1/2 cup tamarind pulp", "1/2 cup mint leaves", "1/2 cup coriander", "4-5 green chilies", "Black salt", "Cumin powder", "Chaat masala"],
+    steps: ["Blend mint, coriander, green chilies, tamarind with water, strain to make pani.", "Season pani with black salt, cumin powder, chaat masala.", "Mash potatoes with spices and sprouted moong for stuffing.", "Make a hole in each puri, fill with stuffing.", "Dip filled puri in chilled pani and eat immediately."] },
+  { name: "Aloo Tikki Chaat", cuisine: "🇮🇳 Indian Street Food", time: "35 min", servings: 4, tags: ["aloo tikki","chaat","street food","potato","indian"],
+    ingredients: ["4 boiled potatoes", "1/2 cup peas", "1 tsp cumin", "1 tsp chaat masala", "Oil for shallow frying", "Yogurt", "Tamarind chutney", "Green chutney", "Sev", "Pomegranate seeds", "Coriander"],
+    steps: ["Mash potatoes with peas, cumin, salt, chaat masala. Shape into flat tikkis.", "Shallow fry on tawa with oil until crispy on both sides.", "Place tikki on plate, top with whisked yogurt.", "Drizzle both chutneys generously.", "Top with sev, pomegranate seeds, coriander, and extra chaat masala."] },
+  { name: "Dahi Vada", cuisine: "🇮🇳 Indian", time: "40 min", servings: 6, tags: ["dahi vada","yogurt","lentil","indian","chaat"],
+    ingredients: ["1 cup urad dal (soaked overnight)", "1 tbsp ginger", "Salt", "Oil for frying", "2 cups beaten yogurt", "Tamarind chutney", "Green chutney", "Cumin powder", "Chili powder", "Sev", "Coriander"],
+    steps: ["Grind dal with ginger and salt into fluffy batter.", "Heat oil, drop spoon-sized portions; fry until golden.", "Soak fried vadas in warm water for 10 min, gently squeeze.", "Place in dish with beaten yogurt.", "Top with chutneys, cumin, chili, sev, and coriander."] },
+  { name: "Kokum Curry (Solkadhi)", cuisine: "🇮🇳 Goan/Konkan", time: "15 min", servings: 4, tags: ["kokum","solkadhi","goan","konkan","drink","indian"],
+    ingredients: ["10-12 dry kokum", "1 cup coconut milk", "2 green chilies", "2 garlic cloves", "Cumin seeds", "Salt", "Fresh coriander"],
+    steps: ["Soak kokum in 2 cups water for 30 min, extract deep pink liquid.", "Blend garlic, chilies, and cumin into paste.", "Mix kokum water, coconut milk, and spice paste.", "Season with salt.", "Serve chilled as a digestive after meals, garnished with coriander."] },
+  { name: "Pongal (Ven Pongal)", cuisine: "🇮🇳 South Indian", time: "30 min", servings: 4, tags: ["pongal","south indian","rice","breakfast","vegetarian","festival"],
+    ingredients: ["1 cup raw rice", "1/2 cup moong dal", "2 tbsp ghee", "1 tsp cumin", "1 tsp black pepper", "Curry leaves", "Ginger", "Cashews", "Asafoetida", "Salt"],
+    steps: ["Pressure cook rice and dal with 4 cups water for 4 whistles.", "Mash together until creamy.", "Heat ghee, add cashews (fry golden), then cumin, pepper, curry leaves, ginger.", "Pour tempering over rice-dal, mix vigorously with salt.", "Serve hot with sambar and coconut chutney."] },
+  { name: "Kofta Biryani (Vegetable Kofta)", cuisine: "🇮🇳 Indian", time: "90 min", servings: 5, tags: ["kofta biryani","indian","rice","vegetarian"],
+    ingredients: ["2 cups basmati rice", "250g mixed vegetables (mashed)", "1/2 cup paneer (grated)", "1 cup yogurt", "2 onions (fried)", "Saffron milk", "Biryani masala", "Ghee", "Mint leaves"],
+    steps: ["Make koftas: mix mashed vegetables, paneer, spices; shape into balls, fry golden.", "Marinate in spiced yogurt.", "Par-cook rice with whole spices.", "Layer koftas, rice, fried onions, mint in pot.", "Pour saffron milk, seal and dum cook 25 min."] },
+  { name: "Prawn Masala", cuisine: "🇮🇳 Coastal Indian", time: "30 min", servings: 3, tags: ["prawn","seafood","coastal","indian","spicy"],
+    ingredients: ["400g prawns (cleaned)", "2 onions", "2 tomatoes", "1 tbsp ginger-garlic paste", "1 tsp turmeric", "2 tsp red chili powder", "1 tsp garam masala", "Curry leaves", "Coconut milk", "2 tbsp oil"],
+    steps: ["Marinate prawns in turmeric, chili powder, and salt for 15 min.", "Heat oil, fry curry leaves and onions until golden.", "Add ginger-garlic paste and tomatoes, cook 8 min.", "Add marinated prawns, cook 5 min.", "Add coconut milk and garam masala, simmer 5 min. Serve with rice."] },
+  { name: "Curd Rice (Thayir Sadam)", cuisine: "🇮🇳 South Indian", time: "20 min", servings: 3, tags: ["curd rice","south indian","yogurt","comfort","vegetarian","temple food"],
+    ingredients: ["2 cups cooked rice", "1 cup yogurt", "1/2 cup milk", "1 tsp mustard seeds", "Curry leaves", "2 red chilies", "1 tbsp oil", "Pomegranate seeds", "Grated ginger", "Salt"],
+    steps: ["Mix warm rice with yogurt and milk until creamy.", "Season with salt and grated ginger.", "Heat oil, temper mustard seeds, red chilies, and curry leaves.", "Pour tempering over curd rice, mix gently.", "Garnish with pomegranate seeds and serve chilled."] },
+  { name: "Keema Matar (Minced Meat with Peas)", cuisine: "🇮🇳 Indian", time: "35 min", servings: 4, tags: ["keema","mince","meat","peas","indian","mughlai"],
+    ingredients: ["400g minced mutton/chicken", "1 cup green peas", "2 onions", "2 tomatoes", "1 tbsp ginger-garlic paste", "2 tsp keema masala", "1 tsp cumin", "2 tbsp oil", "Coriander", "Salt"],
+    steps: ["Heat oil, sauté cumin and onions until golden.", "Add ginger-garlic paste, cook 2 min.", "Add keema, cook on high heat until browned (8 min).", "Add tomatoes and spices, cook 10 min.", "Add peas, 1/4 cup water, simmer 10 min. Garnish with coriander."] },
+  { name: "Paneer Tikka", cuisine: "🇮🇳 Indian", time: "35 min", servings: 4, tags: ["paneer tikka","starter","indian","grilled","vegetarian","tandoori"],
+    ingredients: ["300g paneer (cubed)", "1 capsicum", "1 onion (chunked)", "1 cup thick yogurt", "1 tbsp besan", "2 tsp tikka masala", "1 tsp kashmiri chili", "1 tbsp ginger-garlic paste", "Lemon juice", "Oil"],
+    steps: ["Whisk yogurt with besan, tikka masala, chili, ginger-garlic, lemon juice.", "Coat paneer, capsicum, and onion in marinade; rest 2 hours.", "Thread onto skewers, brush with oil.", "Grill or bake at 220°C for 15-18 min, turning once.", "Serve with green chutney and lemon."] },
+  { name: "Aloo Mutter (Potato Peas Curry)", cuisine: "🇮🇳 Indian", time: "30 min", servings: 3, tags: ["aloo mutter","potato","peas","vegetarian","indian","curry"],
+    ingredients: ["3 potatoes (cubed)", "1 cup peas", "2 tomatoes", "1 onion", "1 tsp ginger-garlic paste", "1 tsp cumin", "1 tsp coriander powder", "1/2 tsp garam masala", "2 tbsp oil", "Salt", "Coriander"],
+    steps: ["Heat oil, add cumin, sauté onion until golden.", "Add ginger-garlic paste, tomatoes, and spices.", "Cook 5 min until oil separates.", "Add potatoes and peas with 1 cup water.", "Cook covered 15 min until potatoes are tender. Garnish with coriander."] },
+  { name: "Stuffed Capsicum (Bharwa Shimla Mirch)", cuisine: "🇮🇳 Indian", time: "40 min", servings: 4, tags: ["capsicum","stuffed","vegetarian","indian","baked"],
+    ingredients: ["4 large capsicums", "2 potatoes (mashed)", "1/2 cup peas", "1 onion", "1 tsp garam masala", "1 tsp amchur", "1 tsp red chili", "2 tbsp oil", "Paneer (optional)", "Coriander"],
+    steps: ["Cut capsicum tops, remove seeds.", "Sauté onion in oil, add mashed potato, peas, spices and coriander.", "Stuff filling into capsicums, replace tops.", "Arrange in baking dish with a drizzle of oil.", "Bake at 180°C for 25 min or cook covered in pan 20 min."] },
+  { name: "Sindhi Curry", cuisine: "🇮🇳 Sindhi", time: "45 min", servings: 4, tags: ["sindhi curry","besan","vegetarian","indian"],
+    ingredients: ["2 tbsp besan", "2 tbsp oil", "1 cup mixed vegetables (drumstick, brinjal, potato, beans)", "Tamarind pulp", "2 tomatoes", "Curry leaves", "Mustard seeds", "1 tsp turmeric", "Salt"],
+    steps: ["Heat oil, add besan and roast until golden and nutty.", "Add water gradually, whisk to avoid lumps.", "Add tomatoes, tamarind, curry leaves, mustard seeds, turmeric.", "Add all vegetables, cook until tender (20 min).", "Adjust consistency with water. Serve with rice or sindhi roti."] },
+  { name: "Chicken Chettinad", cuisine: "🇮🇳 Tamil Nadu", time: "60 min", servings: 4, tags: ["chettinad","chicken","tamil","spicy","south indian","indian"],
+    ingredients: ["500g chicken", "2 onions", "3 tomatoes", "1 tbsp ginger-garlic paste", "2 tsp chettinad masala", "Kalpasi", "Marathi mokku", "Curry leaves", "Coconut milk", "2 tbsp oil"],
+    steps: ["Make fresh chettinad masala: roast and grind spices (kalpasi, marathi mokku, cinnamon, cloves, pepper, fennel).", "Sauté onions and ginger-garlic in oil.", "Add tomatoes and ground masala, cook until oil separates.", "Add chicken pieces, cook on high 5 min.", "Add coconut milk and curry leaves, simmer 25 min."] },
+  { name: "Malai Kofta", cuisine: "🇮🇳 Indian", time: "60 min", servings: 4, tags: ["malai kofta","paneer","potato","indian","vegetarian","rich"],
+    ingredients: ["200g paneer (crumbled)", "2 boiled potatoes (mashed)", "1/2 cup cream", "1 tsp garam masala", "Cashews for stuffing", "2 onions", "3 tomatoes", "2 tbsp ghee", "Cardamom", "Salt"],
+    steps: ["Mix paneer and potato with spices; stuff each ball with a cashew.", "Deep fry koftas until golden.", "Blend onion and tomato into smooth sauce; cook in ghee 15 min.", "Add cream and garam masala.", "Add koftas just before serving to keep them intact. Serve with naan."] },
+  { name: "Kosha Mangsho (Slow-cooked Mutton)", cuisine: "🇮🇳 Bengali", time: "90 min", servings: 4, tags: ["kosha mangsho","mutton","bengali","indian","slow cooked"],
+    ingredients: ["700g mutton (with bone)", "2 onions", "1/2 cup mustard oil", "1 tbsp ginger-garlic paste", "1 tsp turmeric", "2 tsp red chili powder", "2 tsp meat masala", "Yogurt", "Bay leaves", "Whole spices"],
+    steps: ["Marinate mutton in yogurt, turmeric, chili powder for 2 hours.", "Heat mustard oil until smoking, add bay leaves and whole spices.", "Fry onions until deep brown.", "Add marinated mutton; bhuno (dry roast) on high heat 15 min stirring continuously.", "Add 1/2 cup water, cover and cook 45-60 min on low until tender."] },
+  { name: "Puri Bhaji", cuisine: "🇮🇳 Indian", time: "30 min", servings: 4, tags: ["puri","bhaji","potato","breakfast","indian","deep fried"],
+    ingredients: ["2 cups whole wheat flour", "4 potatoes (boiled)", "1 onion", "1 tsp mustard seeds", "Curry leaves", "1 tsp turmeric", "1 tsp green chili", "Oil for frying", "Coriander", "Lemon"],
+    steps: ["Knead firm dough with flour, salt, and water.", "Roll into small round puris, deep fry until puffed and golden.", "For bhaji: heat oil, temper mustard seeds, curry leaves.", "Add onion, green chili, coarsely mashed potatoes, turmeric.", "Cook 5 min, add lemon and coriander. Serve with hot puris."] },
+  { name: "Sheera (Sooji Halwa)", cuisine: "🇮🇳 Indian Dessert", time: "20 min", servings: 4, tags: ["sheera","halwa","semolina","dessert","sweet","indian","prasad"],
+    ingredients: ["1 cup semolina (sooji)", "1/2 cup ghee", "3/4 cup sugar", "2 cups warm water", "1/4 tsp cardamom powder", "Cashews", "Raisins", "Saffron"],
+    steps: ["Roast semolina in ghee until golden and fragrant.", "Add cashews and raisins, roast 1 min more.", "Add warm water carefully (will splatter), stir continuously.", "Add sugar, saffron, and cardamom, mix well.", "Cook until liquid is absorbed and halwa leaves sides of pan."] },
+  { name: "Chicken Tikka Masala", cuisine: "🇮🇳 Indian", time: "50 min", servings: 4, tags: ["chicken tikka masala","indian","curry","chicken"],
+    ingredients: ["500g chicken breast (cubed)", "1 cup yogurt", "2 tbsp tikka masala", "2 onions", "3 tomatoes", "1 cup cream", "2 tbsp ghee", "Kasuri methi", "Garam masala", "Coriander"],
+    steps: ["Marinate chicken in yogurt, tikka masala, lemon juice for 2 hours.", "Grill or pan-fry chicken until charred.", "Make sauce: sauté onions, add tomatoes, cook 15 min.", "Blend sauce smooth, return to pan, add cream.", "Add grilled chicken, kasuri methi, simmer 10 min."] },
+  { name: "Malpua", cuisine: "🇮🇳 Indian Dessert", time: "35 min", servings: 8, tags: ["malpua","dessert","sweet","indian","festival","pancake"],
+    ingredients: ["1 cup maida", "1/4 cup semolina", "1/2 cup mashed banana or khoya", "1 tsp fennel seeds", "1 cup milk", "1 cup sugar", "Cardamom", "Saffron", "Oil/ghee for frying"],
+    steps: ["Mix maida, semolina, banana/khoya, fennel, milk into smooth batter.", "Prepare sugar syrup with cardamom and saffron.", "Heat ghee, pour small ladle of batter to form thick pancake.", "Fry until golden on both sides.", "Soak in warm sugar syrup and serve with rabdi."] },
+  { name: "Achari Paneer", cuisine: "🇮🇳 Indian", time: "30 min", servings: 3, tags: ["achari paneer","pickle spiced","indian","vegetarian"],
+    ingredients: ["250g paneer", "1 onion", "2 tomatoes", "2 tbsp pickle oil (from mixed pickle jar)", "1 tsp nigella seeds", "1 tsp fennel seeds", "1 tsp mustard seeds", "1 tsp fenugreek seeds", "1 tsp red chili", "Yogurt", "Salt"],
+    steps: ["Heat pickle oil, add all whole seeds and temper.", "Add onions, sauté until golden.", "Add tomatoes, chili powder, and salt; cook 8 min.", "Add yogurt, cook until sauce thickens.", "Add paneer, simmer 5 min. Serve with paratha."] },
+  { name: "Daal Baati Churma", cuisine: "🇮🇳 Rajasthani", time: "90 min", servings: 6, tags: ["daal baati churma","rajasthani","indian","festive"],
+    ingredients: ["2 cups wheat flour", "1/2 cup semolina", "3 tbsp ghee", "1 cup five-dal mix (panchmel)", "2 tomatoes", "Rajasthani spices", "Churma: 2 cups flour, ghee, jaggery, cardamom"],
+    steps: ["Make baati dough with flour, semolina, ghee, salt, and water; shape into balls.", "Bake baatis in oven at 180°C for 35-40 min until firm.", "Roast baatis over direct flame until charred outside.", "Dip hot baatis in ghee.", "Cook panchmel dal with spices. Make churma: crumble fried baatis with jaggery and cardamom. Serve all three together."] },
+  { name: "Murgh Musallam", cuisine: "🇮🇳 Mughlai", time: "90 min", servings: 4, tags: ["murgh musallam","whole chicken","mughlai","indian","festive"],
+    ingredients: ["1 whole chicken", "1 cup yogurt", "2 onions (paste)", "1 tbsp ginger-garlic paste", "1/2 cup almonds", "1/4 cup cashews", "2 tsp shahi garam masala", "1/4 cup cream", "Saffron", "Ghee"],
+    steps: ["Marinate whole chicken in yogurt and spices for 4 hours.", "Stuff chicken with spiced nut mixture.", "Sear stuffed chicken in ghee on all sides.", "Make onion-almond sauce, coat chicken.", "Cook covered in oven at 160°C for 60-70 min, basting frequently with saffron cream."] },
+  { name: "Chaat Papdi", cuisine: "🇮🇳 Indian Street Food", time: "30 min", servings: 4, tags: ["chaat papdi","street food","indian","crispy"],
+    ingredients: ["20 crispy puri/papdi", "1 cup sprouted moong", "2 boiled potatoes", "Beaten yogurt", "Tamarind chutney", "Green chutney", "Sev", "Chaat masala", "Cumin powder", "Pomegranate seeds"],
+    steps: ["Arrange papdi on a serving plate.", "Spread boiled potato and sprouted moong on top.", "Pour beaten yogurt over generously.", "Drizzle tamarind and green chutneys.", "Top with sev, pomegranate, chaat masala. Serve immediately."] },
+  { name: "Haleem", cuisine: "🇮🇳 Hyderabadi", time: "120 min", servings: 6, tags: ["haleem","mutton","wheat","hyderabadi","indian","slow cooked"],
+    ingredients: ["300g mutton", "1/2 cup wheat (soaked overnight)", "1/4 cup chana dal", "1/4 cup masoor dal", "2 onions (fried)", "Haleem masala", "Ginger-garlic paste", "Ghee", "Lime", "Mint"],
+    steps: ["Pressure cook mutton until completely tender (4 whistles).", "Pressure cook soaked wheat and dals separately.", "Shred mutton and blend with dals and wheat until paste-like.", "Cook combined mixture with haleem masala and ginger-garlic in ghee.", "Slow cook 40 min, stirring frequently. Garnish with fried onion, lime, and mint."] },
+  { name: "Bamboo Shoot Curry", cuisine: "🇮🇳 Northeast Indian", time: "45 min", servings: 3, tags: ["bamboo shoot","northeast","tribal","indian","non-veg"],
+    ingredients: ["1 cup bamboo shoots (sliced)", "200g pork or chicken", "2 green chilies", "1 onion", "Garlic", "Ginger", "1 tsp turmeric", "Fermented soybean paste (optional)", "Oil", "Salt"],
+    steps: ["If using fresh bamboo, boil first and discard water to remove bitterness.", "Sauté garlic, ginger, and onion in oil.", "Add meat and cook on high heat 10 min.", "Add bamboo shoots, chilies, turmeric.", "Add water and simmer 20 min. Serve with steamed rice."] },
+  { name: "Aviyal", cuisine: "🇮🇳 Kerala", time: "35 min", servings: 4, tags: ["aviyal","kerala","vegetarian","coconut","south indian"],
+    ingredients: ["Mixed vegetables (yam, raw banana, drumstick, beans, carrot — 2 cups)", "1/2 cup grated coconut", "3 green chilies", "1 tsp cumin", "1/2 cup thick yogurt", "Curry leaves", "Coconut oil", "Salt"],
+    steps: ["Cook mixed vegetables with turmeric and salt until just tender.", "Grind coconut, green chilies, and cumin to coarse paste.", "Add coconut paste to cooked vegetables, mix and heat through.", "Remove from flame, stir in yogurt.", "Drizzle coconut oil and curry leaves on top."] },
+  { name: "Sabudana Khichdi", cuisine: "🇮🇳 Maharashtra", time: "20 min", servings: 2, tags: ["sabudana","khichdi","fast food","vrat","indian","tapioca"],
+    ingredients: ["1 cup sabudana (tapioca pearls, soaked)", "2 potatoes (boiled, cubed)", "1/2 cup roasted peanuts", "1 tsp cumin seeds", "3-4 green chilies", "1 tsp lemon juice", "2 tbsp oil", "Coriander", "Salt/rock salt"],
+    steps: ["Soak sabudana in water for 4-5 hours until grains separate easily.", "Heat oil, add cumin seeds and green chilies.", "Add boiled potato cubes, sauté 3 min.", "Add drained sabudana, toss gently on medium heat 5-7 min.", "Add peanuts, lemon juice, salt, coriander. Serve hot."] },
+  { name: "Mutton Rogan Josh", cuisine: "🇮🇳 Kashmiri", time: "75 min", servings: 4, tags: ["rogan josh","mutton","kashmiri","indian","curry"],
+    ingredients: ["600g mutton", "2 onions", "1 cup yogurt", "2 tbsp Kashmiri red chili powder", "1 tsp turmeric", "Whole spices (bay leaf, cloves, cardamom, cinnamon)", "Mustard oil", "Maval flower (ratanjot)", "Salt"],
+    steps: ["Heat mustard oil until smoking; add whole spices.", "Add onions, fry until deep golden.", "Add mutton, cook on high heat 10 min.", "Add yogurt, Kashmiri chili, turmeric; cook until oil separates.", "Add water, cover and simmer 45 min until mutton is tender."] },
+  { name: "Keerai Masiyal (Spinach Dal)", cuisine: "🇮🇳 Tamil Nadu", time: "25 min", servings: 3, tags: ["keerai","spinach","dal","south indian","tamil","vegan"],
+    ingredients: ["2 cups spinach (blanched)", "1/2 cup toor dal (cooked)", "3 green chilies", "1 tsp cumin", "2 garlic cloves", "1 tsp mustard seeds", "Red chilies", "Curry leaves", "1 tbsp oil", "Salt"],
+    steps: ["Mash blanched spinach coarsely with a wooden ladle.", "Mix with cooked toor dal.", "Heat oil, temper mustard seeds, red chilies, curry leaves, garlic.", "Add spinach-dal mixture, green chilies, and salt.", "Cook 5 min. Serve with rice."] },
+
+  // Italian
+  { name: "Classic Pasta Carbonara", cuisine: "🇮🇹 Italian", time: "20 min", servings: 2, tags: ["pasta","egg","bacon","italian"],
+    ingredients: ["200g spaghetti", "100g pancetta/bacon", "2 eggs", "50g Parmesan", "Black pepper", "Salt"],
+    steps: ["Cook spaghetti al dente.", "Fry pancetta until crispy.", "Whisk eggs with Parmesan and pepper.", "Off heat, combine pasta with pancetta, pour egg mix, toss quickly.", "Serve immediately with extra Parmesan."] },
+  { name: "Margherita Pizza", cuisine: "🇮🇹 Italian", time: "30 min", servings: 2, tags: ["pizza","vegetarian","italian","tomato"],
+    ingredients: ["Pizza dough", "1/2 cup tomato sauce", "200g mozzarella", "Fresh basil", "Olive oil"],
+    steps: ["Preheat oven to 250°C.", "Roll dough thin.", "Spread tomato sauce, top with mozzarella.", "Bake 12-15 min until crust is golden.", "Top with fresh basil and olive oil."] },
+  { name: "Chicken Alfredo", cuisine: "🇮🇹 Italian", time: "25 min", servings: 2, tags: ["pasta","chicken","cream","italian"],
+    ingredients: ["200g fettuccine", "200g chicken breast", "1 cup heavy cream", "50g Parmesan", "2 garlic cloves", "2 tbsp butter"],
+    steps: ["Cook fettuccine.", "Slice and cook chicken in butter until golden.", "Add garlic, cream, Parmesan — simmer 5 min.", "Toss with pasta and chicken."] },
+  { name: "Mushroom Risotto", cuisine: "🇮🇹 Italian", time: "40 min", servings: 2, tags: ["rice","mushroom","vegetarian","italian"],
+    ingredients: ["1 cup arborio rice", "200g mushrooms", "1 onion", "1/2 cup white wine", "3 cups warm stock", "50g Parmesan", "2 tbsp butter"],
+    steps: ["Sauté onion, add rice, toast 1 min.", "Add wine, stir until absorbed.", "Add stock ladle by ladle, stirring constantly.", "Stir in sautéed mushrooms, butter, Parmesan."] },
+
+  // Mexican
+  { name: "Classic Beef Tacos", cuisine: "🇲🇽 Mexican", time: "20 min", servings: 4, tags: ["beef","tacos","mexican"],
+    ingredients: ["400g ground beef", "8 taco shells", "1 tsp cumin", "1 tsp chili powder", "Lettuce", "Tomato", "Cheese", "Salsa", "Sour cream"],
+    steps: ["Brown beef with cumin, chili powder, salt.", "Warm taco shells.", "Fill with beef, top with veggies, cheese, salsa, sour cream."] },
+  { name: "Guacamole", cuisine: "🇲🇽 Mexican", time: "10 min", servings: 4, tags: ["avocado","vegan","dip","mexican"],
+    ingredients: ["3 ripe avocados", "1 lime (juiced)", "1/2 onion", "1 jalapeño", "2 tbsp cilantro", "Salt"],
+    steps: ["Mash avocados.", "Dice onion, jalapeño, cilantro.", "Mix everything with lime juice and salt.", "Serve immediately with chips."] },
+  { name: "Chicken Enchiladas", cuisine: "🇲🇽 Mexican", time: "45 min", servings: 4, tags: ["chicken","mexican","baked"],
+    ingredients: ["400g cooked shredded chicken", "8 flour tortillas", "2 cups enchilada sauce", "1 cup cheese", "1 onion", "Sour cream"],
+    steps: ["Fill tortillas with chicken and onion, roll up.", "Place in baking dish, cover with enchilada sauce.", "Top with cheese.", "Bake 25 min at 180°C."] },
+
+  // Asian
+  { name: "Chicken Fried Rice", cuisine: "🇨🇳 Chinese", time: "20 min", servings: 2, tags: ["rice","chicken","chinese","quick"],
+    ingredients: ["2 cups cooked rice", "150g chicken", "2 eggs", "2 tbsp soy sauce", "1 onion", "Peas", "Carrots", "Sesame oil"],
+    steps: ["Stir-fry chicken in hot wok.", "Push to side, scramble eggs.", "Add rice, veggies, soy sauce.", "Toss everything, finish with sesame oil."] },
+  { name: "Thai Green Curry", cuisine: "🇹🇭 Thai", time: "30 min", servings: 3, tags: ["curry","thai","chicken","coconut"],
+    ingredients: ["400g chicken", "1 can coconut milk", "2 tbsp green curry paste", "Bamboo shoots", "Thai basil", "Fish sauce", "1 tsp sugar"],
+    steps: ["Fry curry paste in 2 tbsp coconut cream.", "Add chicken, cook 5 min.", "Add remaining coconut milk, bamboo shoots.", "Season with fish sauce and sugar.", "Simmer 15 min. Top with basil."] },
+  { name: "Miso Ramen", cuisine: "🇯🇵 Japanese", time: "35 min", servings: 2, tags: ["noodles","soup","japanese","ramen"],
+    ingredients: ["200g ramen noodles", "2 tbsp miso paste", "4 cups chicken broth", "100g pork belly", "2 eggs", "Bok choy", "Spring onions", "Nori"],
+    steps: ["Boil eggs 7 min, peel and halve.", "Cook pork belly slices in pan.", "Heat broth, dissolve miso paste.", "Cook noodles, divide into bowls.", "Top with pork, egg, bok choy, nori, spring onions."] },
+  { name: "Pad Thai", cuisine: "🇹🇭 Thai", time: "25 min", servings: 2, tags: ["noodles","thai","shrimp","quick"],
+    ingredients: ["200g rice noodles", "150g shrimp", "2 eggs", "3 tbsp fish sauce", "1 tbsp tamarind paste", "1 tsp sugar", "Bean sprouts", "Peanuts", "Spring onion"],
+    steps: ["Soak noodles per packet.", "Stir-fry shrimp, push aside, scramble eggs.", "Add noodles, sauce mix (fish sauce, tamarind, sugar).", "Toss with bean sprouts.", "Serve with peanuts and spring onion."] },
+  { name: "Korean Bibimbap", cuisine: "🇰🇷 Korean", time: "40 min", servings: 2, tags: ["rice","korean","vegetable","egg"],
+    ingredients: ["2 cups cooked rice", "1 carrot", "1 zucchini", "100g spinach", "100g ground beef", "2 eggs", "2 tbsp gochujang", "Sesame oil", "Soy sauce"],
+    steps: ["Sauté each vegetable separately with sesame oil.", "Brown beef with soy sauce and sugar.", "Fry eggs sunny side up.", "Assemble: rice + vegetables + beef + egg + gochujang."] },
+
+  // Middle Eastern
+  { name: "Falafel Wraps", cuisine: "🌍 Middle Eastern", time: "30 min", servings: 4, tags: ["chickpeas","vegan","wrap","healthy"],
+    ingredients: ["2 cups chickpeas", "1 onion", "Parsley", "2 garlic cloves", "1 tsp cumin", "1 tsp coriander", "Oil for frying", "Pita bread", "Tahini"],
+    steps: ["Blend chickpeas with onion, herbs, spices.", "Form into small balls.", "Fry until golden (3-4 min each side).", "Serve in pita with tahini, tomato, cucumber."] },
+  { name: "Hummus", cuisine: "🌍 Middle Eastern", time: "10 min", servings: 6, tags: ["chickpeas","vegan","dip","healthy"],
+    ingredients: ["2 cups cooked chickpeas", "3 tbsp tahini", "1 lemon (juiced)", "2 garlic cloves", "Olive oil", "Salt", "Paprika"],
+    steps: ["Blend chickpeas, tahini, lemon juice, garlic until smooth.", "Drizzle olive oil on top.", "Sprinkle paprika, serve with pita."] },
+  { name: "Shakshuka", cuisine: "🌍 Middle Eastern", time: "25 min", servings: 2, tags: ["eggs","tomato","vegetarian","breakfast"],
+    ingredients: ["4 eggs", "2 cans crushed tomatoes", "1 pepper", "1 onion", "3 garlic cloves", "1 tsp cumin", "1 tsp paprika", "Parsley", "Feta"],
+    steps: ["Sauté onion, pepper, garlic.", "Add tomatoes and spices, simmer 10 min.", "Make wells, crack eggs into sauce.", "Cover, cook until eggs are set (5-7 min).", "Top with parsley and feta."] },
+
+  // American / Western
+  { name: "Classic Burger", cuisine: "🇺🇸 American", time: "20 min", servings: 2, tags: ["beef","burger","american","quick"],
+    ingredients: ["400g ground beef", "2 burger buns", "2 slices cheddar", "Lettuce", "Tomato", "Onion", "Pickles", "Ketchup", "Mustard"],
+    steps: ["Season beef, form into patties.", "Grill 3-4 min per side for medium.", "Add cheese in last minute.", "Toast buns, assemble with all toppings."] },
+  { name: "Grilled Salmon", cuisine: "🇺🇸 American", time: "15 min", servings: 2, tags: ["salmon","fish","healthy","quick"],
+    ingredients: ["2 salmon fillets", "2 tbsp olive oil", "1 lemon", "2 garlic cloves", "Dill", "Salt", "Pepper"],
+    steps: ["Brush salmon with olive oil, garlic, dill, salt, pepper.", "Grill 4-5 min per side.", "Squeeze fresh lemon on top.", "Serve with roasted vegetables or salad."] },
+  { name: "Caesar Salad", cuisine: "🥗 American", time: "15 min", servings: 2, tags: ["salad","chicken","healthy","quick"],
+    ingredients: ["1 romaine lettuce", "150g grilled chicken", "Croutons", "Parmesan", "Caesar dressing", "Black pepper"],
+    steps: ["Chop and wash romaine.", "Slice grilled chicken.", "Toss lettuce with dressing.", "Top with chicken, croutons, Parmesan and pepper."] },
+  { name: "Pancakes", cuisine: "🥞 American", time: "20 min", servings: 4, tags: ["breakfast","sweet","quick","vegetarian"],
+    ingredients: ["1.5 cups flour", "1 tbsp sugar", "1 tsp baking powder", "1 egg", "1 cup milk", "2 tbsp butter", "Maple syrup"],
+    steps: ["Mix dry ingredients. Mix wet ingredients separately.", "Combine, don't over-mix.", "Pour ¼ cup batter onto buttered pan.", "Flip when bubbles form (2-3 min). Cook 1-2 min more.", "Serve with maple syrup and berries."] },
+
+  // Healthy / Special diet
+  { name: "Avocado Toast with Eggs", cuisine: "🥑 Healthy", time: "10 min", servings: 2, tags: ["avocado","egg","breakfast","healthy"],
+    ingredients: ["2 slices sourdough", "1 ripe avocado", "2 eggs", "Chili flakes", "Lemon juice", "Salt", "Pepper"],
+    steps: ["Toast bread.", "Mash avocado with lemon, salt, pepper.", "Poach or fry eggs.", "Spread avocado on toast, top with egg, chili flakes."] },
+  { name: "Quinoa Vegetable Bowl", cuisine: "🥗 Healthy", time: "30 min", servings: 2, tags: ["quinoa","vegan","healthy","protein"],
+    ingredients: ["1 cup quinoa", "1 zucchini", "1 bell pepper", "Cherry tomatoes", "1/2 cup edamame", "Olive oil", "Lemon", "Tahini"],
+    steps: ["Cook quinoa per package.", "Roast vegetables at 200°C for 20 min.", "Assemble bowl with quinoa and veggies.", "Drizzle with olive oil, lemon, and tahini."] },
+  { name: "Lentil Soup", cuisine: "🌍 Mediterranean", time: "35 min", servings: 4, tags: ["lentils","vegan","soup","healthy"],
+    ingredients: ["1.5 cups red lentils", "1 onion", "2 carrots", "3 garlic cloves", "1 tsp cumin", "1 tsp turmeric", "4 cups vegetable broth", "Lemon juice"],
+    steps: ["Sauté onion, garlic, carrots.", "Add lentils, spices, broth.", "Simmer 25 min until lentils are soft.", "Blend half for creamier texture.", "Finish with lemon juice."] },
+  { name: "Berry Smoothie Bowl", cuisine: "🫐 Healthy", time: "10 min", servings: 1, tags: ["smoothie","breakfast","vegan","quick","berries"],
+    ingredients: ["1 cup frozen mixed berries", "1 banana", "1/2 cup almond milk", "Granola", "Fresh berries", "Honey", "Coconut flakes"],
+    steps: ["Blend frozen berries, banana, almond milk until thick.", "Pour into bowl.", "Top with granola, fresh berries, coconut flakes, honey."] },
+];
+
+// ═══════════════════════════════════════════════════
+//  HEALTH ADVICE (extended to 15 conditions)
+// ═══════════════════════════════════════════════════
+
+const HEALTH_ADVICE = {
+  headache: {
+    symptoms: ["headache","head pain","migraine","head ache","forehead pain"],
+    advice: "Common causes include dehydration, stress, eye strain, or tension.\n\n**Immediate steps:**\n• Drink a glass of water — dehydration is a top cause\n• Rest in a quiet, dark room\n• Apply a cool or warm compress to your head/neck\n• Gentle neck stretches may help tension headaches\n\nOTC options: Paracetamol or Ibuprofen (follow package instructions).",
+    when: "Seek immediate care if: severe sudden headache, headache with fever/stiff neck, after head injury, or if vision changes occur."
+  },
+  fever: {
+    symptoms: ["fever","high temperature","temperature","hot","chills","sweating"],
+    advice: "Fever is your body fighting infection.\n\n**Management:**\n• Stay hydrated — drink plenty of fluids\n• Rest as much as possible\n• Light, breathable clothing\n• Lukewarm sponge bath (not cold)\n• Paracetamol or Ibuprofen can reduce fever\n\nNormal temperature: 36.1–37.2°C. Fever is >38°C.",
+    when: "Seek care if: >39.4°C (103°F), fever lasts >3 days, or accompanied by severe symptoms."
+  },
+  cough: {
+    symptoms: ["cough","coughing","sore throat","throat","cold","phlegm"],
+    advice: "Most coughs are viral and resolve in 1–2 weeks.\n\n**Home remedies:**\n• Honey in warm water or tea (natural soothing)\n• Stay hydrated to thin mucus\n• Humidifier if air is dry\n• Elevate head while sleeping\n• Steam inhalation for congestion\n\nAvoid smoking and irritants.",
+    when: "See a doctor if: cough >3 weeks, coughing blood, severe chest pain, or difficulty breathing."
+  },
+  stomach: {
+    symptoms: ["stomach","nausea","vomiting","diarrhea","abdomen","tummy","belly","bloating","indigestion"],
+    advice: "Stomach issues are common. BRAT diet often helps.\n\n**For nausea/upset stomach:**\n• Sip clear fluids, avoid solid food temporarily\n• BRAT diet: Bananas, Rice, Applesauce, Toast\n• Avoid dairy, spicy, fatty foods\n• Ginger tea can soothe nausea\n\n**For diarrhea:** ORS (Oral Rehydration Salts) to replace lost fluids and electrolytes.",
+    when: "Seek care if: blood in stool/vomit, severe abdominal pain, signs of dehydration, or symptoms >48 hours."
+  },
+  sleep: {
+    symptoms: ["sleep","insomnia","can't sleep","tired","fatigue","exhausted","sleepless"],
+    advice: "Good sleep is essential for health. Aim for 7–9 hours for adults.\n\n**Sleep hygiene tips:**\n• Consistent sleep/wake schedule (even weekends)\n• Avoid screens 1 hour before bed (blue light disrupts melatonin)\n• Keep bedroom cool, dark, and quiet\n• Avoid caffeine after 2 PM\n• Light exercise during the day\n• Relaxation: deep breathing, meditation, or reading",
+    when: "See a doctor if: chronic insomnia >3 weeks, excessive daytime sleepiness, or suspected sleep apnea."
+  },
+  stress: {
+    symptoms: ["stress","anxiety","anxious","worried","mental health","depression","sad","mood","panic"],
+    advice: "Mental wellness is as important as physical health. You're not alone.\n\n**Evidence-based strategies:**\n• Regular exercise — even a 20-min walk helps\n• Mindfulness or meditation (apps: Headspace, Calm)\n• Deep breathing: 4 counts in, hold 4, out 4\n• Journaling your thoughts\n• Social connection — talk to someone you trust\n• Limit news/social media intake\n• Adequate sleep and nutrition",
+    when: "Please speak to a healthcare professional if you're experiencing prolonged low mood, hopelessness, or thoughts of self-harm."
+  },
+  backPain: {
+    symptoms: ["back pain","back ache","lower back","spine","lumbar","backache"],
+    advice: "Back pain is very common; usually improves in 4-6 weeks.\n\n**Relief tips:**\n• Stay active — bed rest can worsen it\n• Apply ice for first 48 hours, then heat\n• Gentle stretching and walking\n• OTC pain relievers (Ibuprofen preferred for inflammation)\n• Sleep with a pillow between your knees if sleeping on your side\n• Avoid heavy lifting; use proper form when you do",
+    when: "See a doctor if: pain radiates down the leg, bladder/bowel changes occur, after trauma, or if severe and unrelenting."
+  },
+  diabetes: {
+    symptoms: ["diabetes","blood sugar","sugar","diabetic","glucose","thirsty","frequent urination","insulin"],
+    advice: "Managing diabetes involves diet, exercise, and monitoring.\n\n**Lifestyle tips:**\n• Choose low-GI foods: whole grains, legumes, vegetables\n• Limit refined carbs, sweets, sugary drinks\n• Regular exercise (150 min/week of moderate activity)\n• Monitor blood glucose regularly\n• Maintain healthy weight\n• Drink plenty of water\n\n**Blood sugar targets (general):** Fasting: 80-130 mg/dL, Post-meal: <180 mg/dL.",
+    when: "Contact your doctor immediately if: blood sugar >300 mg/dL, signs of diabetic ketoacidosis (fruity breath, confusion), or hypoglycemia (shaking, confusion, sweating)."
+  },
+  hypertension: {
+    symptoms: ["blood pressure","hypertension","high bp","bp high","bp","pressure"],
+    advice: "High blood pressure often has no symptoms — it's called the 'silent killer'.\n\n**Lifestyle changes (DASH approach):**\n• Reduce sodium (salt) intake to <2,300 mg/day\n• Eat fruits, vegetables, whole grains\n• Limit alcohol and caffeine\n• Regular aerobic exercise (30 min daily)\n• Manage stress through relaxation techniques\n• Quit smoking\n• Maintain healthy weight\n\nNormal BP: <120/80 mmHg",
+    when: "Seek emergency care if BP >180/120 mmHg (hypertensive crisis), or if you have chest pain, severe headache, vision changes."
+  },
+  allergy: {
+    symptoms: ["allergy","allergic","rash","hives","itching","itchy","sneezing","runny nose","hay fever","pollen"],
+    advice: "Allergies occur when the immune system reacts to harmless substances.\n\n**Common management:**\n• Identify and avoid your triggers\n• Antihistamines (Cetirizine, Loratadine) for mild symptoms\n• Nasal corticosteroid spray for hay fever\n• Wear sunglasses outdoors during high pollen season\n• Keep windows closed during high pollen times\n• Shower after outdoor activities to remove pollen",
+    when: "Seek EMERGENCY care if: throat swelling, difficulty breathing, dizziness, or drop in blood pressure (signs of anaphylaxis). Call emergency services immediately."
+  },
+  heartburn: {
+    symptoms: ["heartburn","acid","acidity","reflux","gerd","burning chest","indigestion","burping"],
+    advice: "Heartburn (acid reflux) occurs when stomach acid rises into the esophagus.\n\n**Relief strategies:**\n• Eat smaller, more frequent meals\n• Avoid lying down for 2-3 hours after eating\n• Elevate head of bed 6-8 inches\n• Avoid triggers: spicy food, caffeine, alcohol, citrus, chocolate\n• Maintain healthy weight\n• OTC antacids (Gaviscon, Rennie) for quick relief\n• Proton pump inhibitors (e.g., Omeprazole) for frequent symptoms",
+    when: "See a doctor if: symptoms >twice a week, difficulty swallowing, unexplained weight loss, or black stools."
+  },
+  jointPain: {
+    symptoms: ["joint pain","arthritis","knee pain","knee","swollen joint","joint","stiff","rheumatoid"],
+    advice: "Joint pain can stem from arthritis, injury, or overuse.\n\n**Management:**\n• Rest the affected joint\n• Apply ice (first 48h) or heat (chronic pain)\n• Gentle range-of-motion exercises\n• Ibuprofen or Naproxen for pain and inflammation\n• Maintain healthy weight to reduce joint load\n• Low-impact exercise: swimming, cycling, yoga\n• Omega-3 rich foods (fish, flaxseed) may help reduce inflammation",
+    when: "See a doctor if: sudden severe joint pain, joint is hot/red/swollen, after injury, or if pain significantly limits movement."
+  },
+  skinIssues: {
+    symptoms: ["acne","pimple","skin","eczema","psoriasis","dry skin","oily skin","breakout"],
+    advice: "Skin conditions are often manageable with the right routine.\n\n**For acne:**\n• Cleanse twice daily with gentle cleanser\n• Use non-comedogenic moisturizer\n• Don't pick or pop pimples\n• Salicylic acid or benzoyl peroxide products help\n\n**For dry/eczema skin:**\n• Moisturize immediately after bathing\n• Use fragrance-free products\n• Lukewarm (not hot) showers\n• Avoid known triggers (wool, certain soaps)\n\n**General:** Stay hydrated, eat a balanced diet, reduce stress.",
+    when: "See a dermatologist if: severe widespread rash, skin doesn't improve in 2 weeks, signs of infection (pus, warmth), or if acne severely affects confidence."
+  },
+  eyeStrain: {
+    symptoms: ["eye strain","eyes hurt","eye pain","blurry vision","dry eyes","eye fatigue","screen fatigue"],
+    advice: "Digital eye strain is increasingly common.\n\n**The 20-20-20 rule:**\nEvery 20 minutes, look at something 20 feet away for 20 seconds.\n\n**Other tips:**\n• Adjust screen brightness and contrast\n• Increase font size on devices\n• Blink more frequently\n• Use artificial tears for dry eyes\n• Ensure good lighting — avoid glare\n• Keep screen at arm's length\n• Take regular breaks from screens",
+    when: "See an eye doctor if: vision loss, severe pain, halos around lights, or eye injury."
+  },
+  cold: {
+    symptoms: ["common cold","blocked nose","stuffy nose","congestion","runny nose","sneezing","nasal"],
+    advice: "The common cold is viral; antibiotics won't help.\n\n**Self-care:**\n• Rest and stay hydrated\n• Honey and lemon in warm water\n• Saline nasal rinse to clear congestion\n• Steam inhalation with eucalyptus\n• Decongestants (use for max 3 days)\n• Zinc supplements may shorten duration\n• Vitamin C supports immune function",
+    when: "See a doctor if: symptoms worsen after 5 days, fever >38.5°C for >3 days, severe sinus pain, or ear pain."
+  },
+  asthma: {
+    symptoms: ["asthma","wheezing","wheeze","shortness of breath","difficulty breathing","breathless","inhaler","bronchial"],
+    advice: "Asthma causes airway inflammation and narrowing. Proper management is key.\n\n**Daily management:**\n• Use your preventer inhaler as prescribed — even when feeling well\n• Identify and avoid triggers: dust, smoke, pet dander, pollen, cold air\n• Keep your living space dust-free with regular vacuuming\n• Exercise regularly but warm up properly\n• Monitor your peak flow meter if recommended by your doctor\n• Maintain healthy weight — obesity worsens asthma\n• Get flu and pneumonia vaccines",
+    when: "Seek EMERGENCY care if: severe breathlessness, can't speak in full sentences, lips/fingernails turning blue, inhaler not helping."
+  },
+  thyroid: {
+    symptoms: ["thyroid","hypothyroid","hyperthyroid","thyroid problem","goiter","thyroid gland","tsh","slow metabolism"],
+    advice: "Thyroid disorders affect metabolism, energy, and many body functions.\n\n**Hypothyroidism (underactive):**\n• Fatigue, weight gain, dry skin, constipation, feeling cold\n• Treatment: daily Levothyroxine as prescribed\n\n**Hyperthyroidism (overactive):**\n• Weight loss, rapid heartbeat, anxiety, heat intolerance, tremors\n• Treatment: antithyroid medications, radioactive iodine, or surgery\n\n**General tips:**\n• Take thyroid medication on empty stomach\n• Avoid raw goitrogen-heavy foods in excess (cabbage, broccoli)\n• Ensure adequate iodine and selenium in diet\n• Get TSH checked every 6–12 months",
+    when: "See a doctor for any unexplained weight changes, extreme fatigue, palpitations, or neck swelling."
+  },
+  anemia: {
+    symptoms: ["anemia","anaemia","pale","iron deficiency","low hemoglobin","low haemoglobin","pale skin","iron","weakness","dizziness fatigue"],
+    advice: "Anemia means your blood doesn't carry enough oxygen — often due to low iron.\n\n**Iron-deficiency anemia tips:**\n• Eat iron-rich foods: spinach, lentils, red meat, beans, tofu, fortified cereals\n• Pair iron foods with Vitamin C (lemon, orange) to improve absorption\n• Avoid tea/coffee with meals — they block iron absorption\n• Iron supplements as prescribed (take with water, not milk)\n• Cook in iron cookware when possible\n\n**Other causes:** B12 deficiency (supplement with B12), folate deficiency.",
+    when: "See a doctor if: extreme fatigue, heart palpitations, chest pain, or if symptoms don't improve after dietary changes."
+  },
+  migraine: {
+    symptoms: ["migraine","severe headache","aura","throbbing head","one side headache","nausea with headache","light sensitivity","sound sensitivity"],
+    advice: "Migraines are intense recurring headaches, often on one side, with nausea and sensitivity to light/sound.\n\n**During an attack:**\n• Rest in a dark, quiet room\n• Apply cold pack to head or neck\n• Stay hydrated — dehydration worsens migraines\n• Sumatriptan or Ibuprofen (take early in attack)\n\n**Prevention:**\n• Identify personal triggers: stress, caffeine, alcohol, chocolate, hormonal changes\n• Maintain regular sleep schedule\n• Stay hydrated throughout the day\n• Regular meals — skipping food can trigger attacks\n• Magnesium supplements may help reduce frequency",
+    when: "Seek immediate care if: thunderclap (sudden severe) headache, headache with fever/stiff neck, or after head injury."
+  },
+  urinaryInfection: {
+    symptoms: ["uti","urinary","burning urination","frequent urination","urine infection","bladder infection","painful urination","cloudy urine"],
+    advice: "UTIs are common, especially in women. Most respond well to treatment.\n\n**Immediate self-care:**\n• Drink plenty of water — 2-3 litres/day to flush bacteria\n• Urinate frequently; don't hold it\n• Avoid caffeine, alcohol, and citrus (irritate bladder)\n• Use a heating pad on lower abdomen for discomfort\n• Cranberry juice may help prevent (not cure) UTIs\n• Maintain proper hygiene — always wipe front to back\n\n**Antibiotics are usually required** — see your doctor for a prescription.",
+    when: "See a doctor promptly if: fever, back/flank pain, nausea/vomiting (suggest kidney infection), blood in urine, or symptoms return after treatment."
+  },
+  cholesterol: {
+    symptoms: ["cholesterol","high cholesterol","ldl","triglycerides","lipid","fatty deposits","cardiovascular risk"],
+    advice: "High cholesterol increases risk of heart disease and stroke — often no symptoms.\n\n**Lifestyle changes:**\n• Reduce saturated fats (red meat, butter, full-fat dairy)\n• Eliminate trans fats (packaged snacks, fried fast food)\n• Eat more fibre: oats, beans, fruits, vegetables\n• Include omega-3 rich foods: fish, walnuts, flaxseeds\n• Regular aerobic exercise (30 min, 5 days/week)\n• Maintain healthy weight\n• Limit alcohol\n• Quit smoking\n\n**Targets (general):** Total cholesterol <200 mg/dL, LDL <130 mg/dL, HDL >60 mg/dL.",
+    when: "See a doctor if cholesterol is very high (LDL >190 mg/dL) or you have other cardiovascular risk factors — statin therapy may be needed."
+  },
+  pneumonia: {
+    symptoms: ["pneumonia","chest infection","lung infection","productive cough","cough with yellow mucus","difficulty breathing cough","respiratory infection"],
+    advice: "Pneumonia is a lung infection requiring medical care.\n\n**While recovering (with medical treatment):**\n• Complete the full antibiotic course as prescribed\n• Rest thoroughly — don't rush return to activity\n• Stay well-hydrated to help thin mucus\n• Use a humidifier to ease breathing\n• Chest physiotherapy exercises as advised by doctor\n• Sleep with head elevated\n• Avoid smoking and smoke exposure completely\n• Nutritious diet to support immune recovery",
+    when: "Seek IMMEDIATE care for: difficulty breathing, chest pain, confusion, high fever (>39°C), or blue-tinged lips/fingernails."
+  },
+  depression: {
+    symptoms: ["depressed","depression","hopeless","worthless","no motivation","loss of interest","low mood","can't enjoy anything","persistent sadness"],
+    advice: "Depression is a real medical condition — not a weakness. You deserve support.\n\n**Evidence-based strategies:**\n• Regular physical exercise (even short walks) — proven to improve mood\n• Maintain a daily routine to provide structure\n• Social connection — isolation worsens depression\n• Limit alcohol (it's a depressant)\n• Journaling and creative expression\n• Mindfulness and meditation (apps: Calm, Headspace)\n• Sleep hygiene — consistent wake/sleep times\n• Nutritious diet including omega-3, B vitamins\n\n**Professional treatment:** Therapy (CBT) and/or antidepressants are highly effective.",
+    when: "Please speak to a mental health professional. If you're having thoughts of self-harm, contact a crisis helpline or go to emergency services immediately."
+  },
+  kidney: {
+    symptoms: ["kidney","renal","kidney stones","kidney pain","blood in urine","protein in urine","kidney disease","creatinine","flank pain","kidney stone"],
+    advice: "Kidneys filter waste from blood. Problems range from stones to chronic disease.\n\n**Kidney stones:**\n• Drink 2.5–3 litres water daily — the best prevention\n• Limit sodium, animal protein, and oxalate-rich foods (spinach, nuts)\n• Calcium from food (not supplements) may actually help\n\n**General kidney health:**\n• Control blood pressure and blood sugar\n• Avoid regular NSAID use (Ibuprofen, Diclofenac) — damages kidneys\n• Maintain healthy weight\n• Avoid herbal remedies — many are nephrotoxic\n• Regular kidney function tests (creatinine, eGFR) if at risk",
+    when: "Seek care for: severe flank pain radiating to groin, blood in urine, persistent swelling in legs, reduced urination, or very high creatinine."
+  },
+  liver: {
+    symptoms: ["liver","jaundice","yellow eyes","yellow skin","liver pain","hepatitis","fatty liver","cirrhosis","bile","dark urine"],
+    advice: "The liver performs 500+ vital functions. Protecting it is crucial.\n\n**Liver health tips:**\n• Limit alcohol strictly — even moderate drinking harms liver over time\n• Maintain healthy weight to prevent fatty liver disease (NAFLD)\n• Balanced diet: whole grains, fruits, vegetables, lean protein\n• Limit processed foods, saturated fats, refined sugar\n• Get vaccinated against Hepatitis A and B\n• Avoid sharing needles, razors, or toothbrushes\n• Be cautious with medications and supplements — many are hepatotoxic\n• Regular exercise improves liver fat",
+    when: "See a doctor for: yellow skin or eyes, dark urine, pale stools, right upper abdominal pain, unexplained weight loss, or swollen abdomen."
+  },
+  anxiety: {
+    symptoms: ["anxiety disorder","panic attack","panic","anxious all the time","racing heart anxiety","anxiety attack","constant worry","generalized anxiety","hyperventilating"],
+    advice: "Anxiety disorders are among the most common mental health conditions — and very treatable.\n\n**Immediate calming techniques:**\n• 4-7-8 breathing: inhale 4 counts, hold 7, exhale 8\n• Grounding: name 5 things you see, 4 you can touch, 3 you hear\n• Progressive muscle relaxation\n\n**Long-term management:**\n• Regular exercise — reduces anxiety by 48% in studies\n• Reduce caffeine and alcohol\n• Consistent sleep schedule\n• Limit social media and news\n• Mindfulness meditation (10 min daily)\n• CBT (Cognitive Behavioral Therapy) is highly effective",
+    when: "Seek professional help if anxiety significantly interferes with daily life, or if you have frequent panic attacks. Both therapy and medication can help."
+  },
+  arthritis: {
+    symptoms: ["arthritis","rheumatoid","osteoarthritis","inflamed joints","joint inflammation","joint stiffness morning","creaky joints","joint swelling"],
+    advice: "Arthritis involves joint inflammation. Two main types: Osteoarthritis (wear-tear) and Rheumatoid Arthritis (autoimmune).\n\n**Management for both:**\n• Gentle, regular exercise: swimming, yoga, cycling\n• Maintain healthy weight to reduce joint load\n• Hot/cold therapy alternation\n• Omega-3 fatty acids reduce inflammation\n• Anti-inflammatory diet: berries, leafy greens, fish, olive oil\n\n**Osteoarthritis:** Glucosamine supplements may help\n\n**Rheumatoid Arthritis:** Disease-modifying drugs (DMARDs) are prescribed — crucial to take as directed\n\n• Physical therapy and occupational therapy are very helpful",
+    when: "See a doctor for: sudden severe joint swelling, red hot joint, inability to move joint, or systemic symptoms like fever and weight loss."
+  },
+  dengue: {
+    symptoms: ["dengue","dengue fever","breakbone fever","dengue symptoms","high fever rash","mosquito fever","platelet drop"],
+    advice: "Dengue is a mosquito-borne viral infection. No specific antiviral treatment exists.\n\n**Self-care at home (mild cases):**\n• Rest completely\n• Drink LOTS of fluids: water, ORS, coconut water, fresh juices\n• Paracetamol for fever and pain — NEVER Ibuprofen or Aspirin (can worsen bleeding)\n• Monitor for warning signs daily\n• Wear full-sleeved clothing to avoid further mosquito bites\n\n**Platelet monitoring:** Get regular blood tests as advised by doctor.\n\n**Prevention:** Eliminate standing water, use mosquito nets and repellents.",
+    when: "Seek IMMEDIATE care for: severe abdominal pain, persistent vomiting, rapid breathing, bleeding from gums/nose, blood in urine/stool, extreme fatigue or restlessness."
+  },
+  typhoid: {
+    symptoms: ["typhoid","typhoid fever","enteric fever","typhoid symptoms","salmonella","continuous fever","rose spots"],
+    advice: "Typhoid is a bacterial infection spread through contaminated food and water.\n\n**During treatment:**\n• Complete the full antibiotic course (Azithromycin or Ciprofloxacin as prescribed)\n• Rest and stay well-hydrated\n• Eat soft, easily digestible foods: rice, khichdi, curd, bananas, boiled vegetables\n• Avoid spicy, fatty, raw foods during illness\n• Separate utensils until recovered to avoid spreading\n\n**Prevention:**\n• Drink only boiled or filtered water\n• Eat freshly cooked food; avoid street food\n• Wash hands thoroughly before eating\n• Get Typhoid vaccine (recommended in endemic areas)",
+    when: "See a doctor if fever exceeds 39°C for more than 3 days, or if you notice confusion, extreme weakness, or abdominal pain."
+  },
+  malaria: {
+    symptoms: ["malaria","malaria fever","chills and fever","rigors","plasmodium","antimalarial","high fever chills"],
+    advice: "Malaria is a mosquito-borne parasitic infection. It requires prompt medical treatment.\n\n**During treatment:**\n• Take antimalarial medications exactly as prescribed — don't skip doses\n• Rest and drink adequate fluids\n• Paracetamol for fever control\n• Monitor for danger signs\n\n**Prevention:**\n• Use mosquito nets (preferably insecticide-treated)\n• Apply mosquito repellent containing DEET\n• Wear long sleeves and pants at dusk and dawn\n• Eliminate standing water around home\n• Chemoprophylaxis (preventive antimalarials) when travelling to endemic areas",
+    when: "Seek IMMEDIATE care if: very high fever with rigors, confusion, severe headache, jaundice, or convulsions — especially if recently travelled to a malaria-endemic area."
+  },
+  chickenpox: {
+    symptoms: ["chickenpox","chicken pox","varicella","itchy rash blisters","pox","shingles","herpes zoster"],
+    advice: "Chickenpox is a viral infection causing itchy blisters. It is usually mild in children.\n\n**Self-care:**\n• Calamine lotion on blisters to reduce itching\n• Antihistamines (Cetirizine) to control itching\n• Trim fingernails short to prevent scratching and infection\n• Cool oatmeal baths soothe the skin\n• Paracetamol for fever — NEVER give Aspirin to children with chickenpox\n• Isolate until all blisters have crusted over (usually 7 days)\n• Light, breathable clothing\n\n**Shingles (in adults):** Antiviral medication (Acyclovir) — start within 72 hours of rash.",
+    when: "See a doctor if: very high fever, difficulty breathing, severe headache, confusion, rash looks infected (red, swollen, warm), or immunocompromised person is affected."
+  },
+  constipation: {
+    symptoms: ["constipation","can't poop","hard stool","straining","infrequent bowel","no bowel movement","hard stools"],
+    advice: "Constipation (fewer than 3 bowel movements per week) is usually manageable.\n\n**Relief strategies:**\n• Increase dietary fibre: whole grains, fruits, vegetables, legumes (aim 25-35g/day)\n• Drink 8-10 glasses of water daily\n• Exercise regularly — movement stimulates bowel\n• Establish a regular bathroom routine, ideally after meals\n• Don't ignore the urge to go\n• Prunes, figs, or psyllium husk are natural laxatives\n• OTC osmotic laxatives (Lactulose) for short-term relief\n\n**Avoid long-term stimulant laxative use.",
+    when: "See a doctor if: no bowel movement for more than 3 weeks, blood in stool, unexplained weight loss, severe abdominal pain, or sudden change in bowel habits."
+  },
+  foodPoisoning: {
+    symptoms: ["food poisoning","food poison","ate bad food","vomiting after eating","stomach cramps vomiting","nausea vomiting diarrhea","gastroenteritis"],
+    advice: "Food poisoning is usually caused by bacteria or toxins in contaminated food.\n\n**Self-care (mild cases):**\n• Let the illness pass — avoid rushing to suppress symptoms\n• Stay VERY hydrated: sips of water, ORS, or sports drinks\n• Start with bland foods when able: toast, bananas, plain rice, yogurt\n• Avoid dairy, fatty, and spicy foods initially\n• Rest completely\n• Wash hands thoroughly to avoid spreading\n\n**Recovery timeline:** Most cases resolve in 24-48 hours.",
+    when: "Seek emergency care for: severe dehydration (no urination >8h, sunken eyes, dry mouth), blood in stool/vomit, high fever, or symptoms lasting >72 hours."
+  },
+  appendicitis: {
+    symptoms: ["appendicitis","appendix","right side abdominal pain","lower right pain","belly button pain"],
+    advice: "Appendicitis is inflammation of the appendix — this is a medical emergency.\n\n⚠️ **Do NOT:\n• Apply heat to the abdomen\n• Take laxatives\n• Eat or drink while waiting for medical evaluation\n\n**Symptoms to recognise:**\n• Pain starting around belly button moving to lower right abdomen\n• Worsens with movement, coughing\n• Nausea, vomiting, low-grade fever\n• Loss of appetite\n\nAppendicitis requires surgery (appendectomy). Delaying increases risk of rupture.",
+    when: "Go to EMERGENCY ROOM IMMEDIATELY if you suspect appendicitis — this is a surgical emergency that cannot wait."
+  },
+  migraine_eye: {
+    symptoms: ["ocular migraine","vision migraine","flickering lights headache","visual aura","zigzag lights","scotoma"],
+    advice: "Ocular/retinal migraines cause temporary visual disturbances, sometimes without pain.\n\n**During an episode:**\n• Stop driving or operating machinery immediately\n• Sit or lie down in a quiet, dim room\n• Gently close your eyes and rest\n• Episodes usually resolve in 20-60 minutes\n• Apply cold compress to forehead\n\n**Preventive measures:**\n• Identify your triggers (bright lights, stress, caffeine, dehydration)\n• Protect eyes with tinted glasses in bright light\n• Stay well hydrated\n• Maintain regular meals and sleep\n• Magnesium and riboflavin supplements may reduce frequency",
+    when: "Seek urgent care if: sudden vision loss, vision doesn't return after 1 hour, or this is a new symptom — it could indicate a different condition requiring prompt evaluation."
+  },
+  sinusitis: {
+    symptoms: ["sinusitis","sinus","sinus pain","facial pain","sinus headache","sinus infection","nasal discharge","post-nasal drip"],
+    advice: "Sinusitis is inflammation of the sinuses, often after a cold.\n\n**Self-care:**\n• Nasal saline irrigation (neti pot or squeeze bottle) — very effective\n• Steam inhalation with menthol/eucalyptus 3-4 times daily\n• Stay hydrated to thin mucus\n• Warm compress over face and nose\n• Nasal decongestant sprays (max 3 days to avoid rebound)\n• Sleep with head elevated\n• Antihistamines if allergic component\n• Avoid smoking and exposure to smoke",
+    when: "See a doctor if: symptoms last >10 days without improvement, fever >38.5°C, severe headache, vision changes, or swelling around the eye."
+  },
+  eczema: {
+    symptoms: ["eczema","atopic dermatitis","itchy patches","dry scaly skin","inflamed skin","skin flare up","skin weeping"],
+    advice: "Eczema is a chronic inflammatory skin condition causing dry, itchy, inflamed patches.\n\n**Daily care:**\n• Moisturise 2-3 times daily — within 3 minutes of bathing (key habit)\n• Use fragrance-free, gentle cleansers only\n• Lukewarm (not hot) showers\n• Wear soft, breathable cotton clothing\n• Identify and avoid personal triggers: certain soaps, sweating, stress, wool, pet dander\n• Topical corticosteroids as prescribed for flares\n• Keep nails trimmed to prevent damage from scratching\n• Use a humidifier in dry environments",
+    when: "See a dermatologist if: widespread severe flares, signs of skin infection (oozing, crusting, warmth), or if OTC treatments aren't helping."
+  },
+  psoriasis: {
+    symptoms: ["psoriasis","silver scales skin","red patches skin","scaly skin","plaque psoriasis","psoriatic"],
+    advice: "Psoriasis is an autoimmune condition causing rapid skin cell buildup.\n\n**Management:**\n• Daily moisturising is essential — use thick emollient creams\n• Coal tar or salicylic acid topicals for scaling\n• Topical corticosteroids or Vitamin D analogues (as prescribed)\n• Phototherapy (UV light treatment) for moderate-severe cases\n• Identify triggers: stress, infections, certain medications, smoking, alcohol\n• Limit alcohol — it significantly worsens psoriasis\n• Anti-inflammatory diet may help: fish, leafy greens, olive oil",
+    when: "See a dermatologist if: covering large body areas, significant pain or itching, joint pain (psoriatic arthritis), or severe impact on quality of life."
+  },
+  gout: {
+    symptoms: ["gout","gout pain","uric acid","big toe pain","joint pain uric acid","hyperuricemia","sudden joint pain red"],
+    advice: "Gout is caused by uric acid crystal buildup in joints — intensely painful.\n\n**During an acute attack:**\n• Rest the affected joint, elevate if possible\n• Apply ice packs for 20-minute intervals\n• Ibuprofen or Naproxen (anti-inflammatories) reduce pain and swelling\n• Stay well-hydrated\n\n**Preventing future attacks:**\n• Avoid purine-rich foods: red meat, organ meats, shellfish, anchovies\n• Eliminate alcohol (especially beer and spirits)\n• Drink 8-10 glasses of water daily\n• Maintain healthy weight\n• Cherries and cherry juice may lower uric acid\n• Long-term: Allopurinol to lower uric acid (as prescribed)",
+    when: "See a doctor for proper diagnosis and treatment. Seek urgent care if severe pain, large swelling, or fever accompanies the attack."
+  },
+  osteoporosis: {
+    symptoms: ["osteoporosis","bone density","fracture easily","brittle bones","bone loss","fractures","low bone density","calcium deficiency"],
+    advice: "Osteoporosis causes bones to become weak and prone to fractures, often silently.\n\n**Building and maintaining bone health:**\n• Calcium-rich foods: dairy, tofu, fortified milk, green leafy vegetables, ragi (finger millet)\n• Vitamin D: sun exposure (15-20 min daily) and supplementation\n• Weight-bearing exercise: walking, jogging, dancing, resistance training\n• Avoid smoking and excessive alcohol — both weaken bones\n• Reduce fall risk at home: remove rugs, install grab bars, improve lighting\n• Protein is important for bone matrix — include adequate protein\n\n**Medications:** Bisphosphonates (Alendronate), Denosumab — as prescribed for diagnosed osteoporosis.",
+    when: "See a doctor for a DEXA scan (bone density test) if over 65, or younger with risk factors. Any fracture from minimal trauma warrants urgent evaluation."
+  },
+  migraineAnxiety: {
+    symptoms: ["panic disorder","sudden fear","racing heart sudden","shortness of breath anxiety","chest tightness anxiety","sweating fear","trembling anxiety"],
+    advice: "Panic attacks peak within 10 minutes and feel terrifying but are not life-threatening.\n\n**During a panic attack:**\n• Remind yourself: this will pass, I am not in danger\n• Focus on slow, controlled breathing — in for 4, out for 6\n• Grounding technique: feet flat on floor, feel the ground\n• Hold something cold like ice or cold water\n• Avoid hyperventilating — breathe into cupped hands if needed\n\n**Long-term:**\n• CBT (Cognitive Behavioral Therapy) — most effective treatment\n• Regular exercise reduces panic disorder frequency significantly\n• Reduce caffeine\n• Exposure therapy with a professional\n• Medications (SSRIs, Benzodiazepines) may be prescribed",
+    when: "First-time episode: always rule out cardiac causes in ER. See a psychiatrist/psychologist for frequent panic attacks."
+  },
+  hypothyroidism: {
+    symptoms: ["hypothyroidism","underactive thyroid","low thyroid","weight gain fatigue","dry skin fatigue","cold all the time","constipation fatigue","depression fatigue hypothyroid"],
+    advice: "Hypothyroidism means your thyroid gland isn't producing enough hormones.\n\n**Symptoms:** Fatigue, weight gain, cold intolerance, dry skin, constipation, depression, hair loss, slow heart rate.\n\n**Management:**\n• Levothyroxine (synthetic T4) — take on empty stomach, 30 min before breakfast\n• Don't take with calcium, iron supplements, or antacids (block absorption)\n• Regular TSH monitoring every 6-12 months\n• Selenium-rich foods: Brazil nuts, eggs, fish\n• Avoid excessive raw goitrogens (broccoli, cabbage) in large amounts\n• Exercise regularly — helps metabolism even with hypothyroidism",
+    when: "See an endocrinologist if poorly controlled on medication, pregnant (requires special dosing), or if symptoms persist despite normal TSH."
+  },
+  sciatica: {
+    symptoms: ["sciatica","sciatic nerve","pain down leg","leg numbness","shooting pain leg","lower back pain radiating","nerve pain leg"],
+    advice: "Sciatica is pain along the sciatic nerve — from lower back through leg.\n\n**Relief strategies:**\n• Stay active — walking is better than rest\n• Hot/cold alternation on lower back\n• Gentle stretches: piriformis stretch, knee-to-chest, hamstring stretches\n• Over-the-counter NSAIDs (Ibuprofen, Naproxen)\n• Sleep with a pillow between knees on your side\n• Avoid prolonged sitting — get up every 30 minutes\n• Physiotherapy is very effective\n\n**Exercises to avoid:** Forward bending, heavy lifting, high-impact activities during flare.",
+    when: "Seek URGENT care if: loss of bladder or bowel control, severe weakness in leg, or sciatica after trauma."
+  },
+  migraine_abdominal: {
+    symptoms: ["stomach ache recurrent","abdominal cramps recurrent","ibs","irritable bowel","bowel discomfort","bloating cramps","alternating diarrhea constipation"],
+    advice: "IBS (Irritable Bowel Syndrome) is a common functional gut disorder.\n\n**Management:**\n• Low-FODMAP diet trials (reduce fermentable carbs: onion, garlic, wheat, legumes, certain fruits)\n• Small, regular meals — avoid large meals\n• Eat slowly and mindfully\n• Identify personal food triggers\n• Increase soluble fibre (oats, flaxseed) — helps both constipation and diarrhoea types\n• Reduce caffeine and alcohol\n• Stress management — gut-brain axis is very real; stress worsens IBS\n• Probiotics may help some people\n• Peppermint oil capsules reduce cramping",
+    when: "See a doctor for proper diagnosis and to rule out other conditions. Seek urgent care for blood in stool, weight loss, or fever."
+  },
+  eczemaAllergy: {
+    symptoms: ["food allergy","food intolerance","lactose intolerance","gluten intolerance","celiac","milk allergy","nut allergy","allergic reaction food"],
+    advice: "Food allergies and intolerances are different but both require dietary management.\n\n**True allergy (immune response):** Reaction within minutes — hives, vomiting, swelling.\n**Intolerance (digestive):** Delayed symptoms — bloating, diarrhoea, pain.\n\n**Management:**\n• Strict avoidance of identified trigger foods\n• Always read food labels carefully\n• Inform restaurants about your allergy\n• Keep an Epinephrine auto-injector (EpiPen) if prescribed for severe allergies\n• Lactose intolerance: lactase supplements or lactose-free products\n• Gluten/Celiac: strict gluten-free diet — even small amounts cause gut damage",
+    when: "Go to ER immediately for: throat swelling, difficulty breathing, dizziness, or widespread hives after eating (anaphylaxis)."
+  },
+  obesity: {
+    symptoms: ["obesity","overweight","bmi","weight loss","weight management","fat","lose weight","weight problem"],
+    advice: "Managing weight improves almost every aspect of health.\n\n**Evidence-based approach:**\n• Caloric deficit: aim for 500 kcal/day less than maintenance (0.5 kg/week loss)\n• Prioritise protein: lean meat, legumes, dairy — keeps you full longer\n• Fill half your plate with vegetables at every meal\n• Reduce ultra-processed foods, sugary drinks\n• Eat mindfully — slower, without screens\n• Drink water before meals\n• Regular exercise: 150-300 min/week cardio + 2 days strength training\n• Adequate sleep — sleep deprivation increases hunger hormones\n• Reduce stress — chronic stress promotes fat storage",
+    when: "See a doctor if BMI >30, especially with co-morbidities. Medical weight management (including medications or surgery) may be options."
+  },
+  hypertensionLow: {
+    symptoms: ["low blood pressure","hypotension","dizziness when standing","lightheadedness","fainting","bp low","feel faint on standing"],
+    advice: "Low blood pressure (hypotension) is often manageable with lifestyle changes.\n\n**Self-care:**\n• Increase salt and fluid intake (unless contraindicated)\n• Drink 2-3 litres of water daily\n• Rise slowly from sitting or lying — pause at the edge of the bed first\n• Avoid standing for long periods in hot weather\n• Wear compression stockings if advised\n• Eat smaller, more frequent meals to prevent post-meal drops\n• Avoid alcohol\n• Regular moderate exercise to improve vascular tone\n\n**Common causes:** Dehydration, medications, prolonged bed rest, pregnancy, heart conditions.",
+    when: "Seek care for: fainting, confusion, chest pain, or if BP consistently <90/60 mmHg."
+  },
+  sprain: {
+    symptoms: ["sprain","ankle sprain","muscle pull","strain","twisted ankle","muscle strain","pulled muscle","sports injury"],
+    advice: "Sprains and strains are common sports and everyday injuries.\n\n**RICE protocol (first 48-72 hours):**\n• **R**est — avoid weight-bearing on the injured area\n• **I**ce — apply ice pack for 20 min every 2 hours\n• **C**ompression — elastic bandage to reduce swelling\n• **E**levation — raise the limb above heart level when possible\n\n**Medications:** Ibuprofen or Naproxen for pain and inflammation.\n\n**Recovery:**\n• After 48-72 hours, gentle movement helps healing\n• Physiotherapy for rehabilitation exercises\n• Return to sport gradually — don't rush",
+    when: "See a doctor if: unable to bear any weight, extreme swelling, numbness, or bones feel misaligned (possible fracture — needs X-ray)."
+  },
+  heatstroke: {
+    symptoms: ["heat stroke","heat exhaustion","overheating","sun stroke","too hot","body temperature high outdoors","heat cramps","sweating excessively heat"],
+    advice: "Heat exhaustion and heatstroke can be life-threatening in hot weather.\n\n**Heat Exhaustion (first stage):**\n• Move to cool, shaded area immediately\n• Remove excess clothing\n• Drink cool water or electrolyte drinks\n• Apply cool wet cloths to skin\n• Fan the person\n• Recovery usually within 30 minutes\n\n**Prevention:**\n• Stay hydrated — drink before you feel thirsty\n• Avoid outdoor activity in peak heat (11am-3pm)\n• Wear light, loose, light-coloured clothing\n• Never leave children/elderly in parked cars",
+    when: "Call EMERGENCY SERVICES for heatstroke: body temp >40°C, confusion, seizures, unconsciousness, or dry hot skin (stopped sweating). This is a medical emergency."
+  },
+  insomnia: {
+    symptoms: ["can't sleep","insomnia","trouble sleeping","waking up at night","early morning waking","poor sleep quality","sleeplessness"],
+    advice: "Chronic insomnia affects 10-30% of adults. Good sleep hygiene is the foundation of treatment.\n\n**Sleep hygiene (most important):**\n• Fixed wake time — same every day, even weekends\n• Go to bed only when sleepy\n• Avoid napping after 3 PM\n• Make bed a sleep/sex-only zone — no phones or TV in bed\n• No screens 1 hour before bed (blue light suppresses melatonin)\n• Cool, dark, quiet room (around 18°C)\n• Avoid caffeine after 2 PM\n• Relaxation: progressive muscle relaxation, sleep stories, meditation\n\n**CBT for Insomnia (CBT-I)** is the gold standard treatment — more effective than sleeping pills.",
+    when: "See a doctor if: insomnia persists >4 weeks, daytime impairment is severe, or suspected sleep apnea (loud snoring, waking gasping)."
+  },
+  chickenpoxAdult: {
+    symptoms: ["measles","measles rash","koplik spots","morbillivirus","measles fever","red rash spreading","fever before rash"],
+    advice: "Measles is a highly contagious viral infection — mostly prevented by MMR vaccine.\n\n**Self-care during illness:**\n• Strict isolation — measles is airborne, very contagious\n• Rest and maintain hydration\n• Paracetamol for fever — NEVER aspirin in children\n• Vitamin A supplementation reduces complications (as prescribed)\n• Soothing calamine or cool compress for rash\n• Rest eyes in dim light if sensitive\n• Nutritious, easily digestible food\n\n**Complications to watch:** Pneumonia, encephalitis, ear infection — more common in malnourished children.",
+    when: "Seek medical care immediately for: difficulty breathing, confusion, seizures, or ear pain with fever."
+  },
+  gallstones: {
+    symptoms: ["gallstones","gall bladder","gallbladder pain","cholecystitis","upper right pain after eating","fatty food pain","bile duct","biliary colic"],
+    advice: "Gallstones are hardened deposits in the gallbladder — common and often symptomless.\n\n**During a gallstone attack (biliary colic):**\n• Rest until pain subsides\n• Pain relievers (Diclofenac or Buscopan) help cramps\n• Avoid eating until pain eases — fasting reduces gallbladder contractions\n\n**Dietary management:**\n• Low-fat diet to reduce gallbladder stimulation\n• Avoid fatty, fried, and very rich foods\n• Regular meals — skipping meals increases stone formation risk\n• Rapid weight loss paradoxically increases gallstone risk — lose weight gradually\n• Stay well hydrated",
+    when: "Seek immediate care for: fever with pain (possible cholecystitis), jaundice, severe unrelenting pain, or vomiting that won't stop. Surgery is often the definitive treatment."
+  },
+  anaemia: {
+    symptoms: ["vitamin b12 deficiency","b12 deficiency","tingling hands feet","numbness tingling","nerve tingling","pins and needles","vitamin deficiency fatigue","neurological fatigue"],
+    advice: "Vitamin B12 deficiency is common in vegetarians, vegans, elderly, and those on metformin.\n\n**Symptoms:** Fatigue, weakness, tingling/numbness in hands and feet, memory problems, depression, sore tongue.\n\n**Treatment and prevention:**\n• B12-rich foods: meat, fish, eggs, dairy\n• Vegetarians/Vegans: B12-fortified foods (plant milks, cereals) or daily supplement (500 mcg)\n• B12 injections for severe deficiency or malabsorption (monthly)\n• Folic acid works together with B12 — ensure adequate intake\n• Avoid excessive alcohol (blocks B12 absorption)",
+    when: "See a doctor for blood test if symptomatic. Neurological damage from B12 deficiency can be irreversible if left untreated too long."
+  },
+  piles: {
+    symptoms: ["piles","hemorrhoids","haemorrhoids","bleeding while passing stool","rectal bleeding","painful defecation","anal pain","itching anus"],
+    advice: "Hemorrhoids (piles) are swollen veins in the rectum or anus — very common.\n\n**Self-care:**\n• High-fibre diet to soften stools: fruits, vegetables, whole grains, legumes\n• Drink 8-10 glasses of water daily\n• Don't strain — go when you feel the urge\n• Sitz bath (warm water hip bath) 3 times daily for 15 min — very soothing\n• Avoid reading/using phone on the toilet — reduces straining\n• Over-the-counter creams (Anusol, Proctosedyl) for relief\n• Moist toilet wipes — gentler than dry paper\n• Regular exercise to prevent constipation",
+    when: "See a doctor for: bright red blood in stool (to rule out other causes), prolapsed hemorrhoids, severe pain, or no improvement after 2 weeks of self-care."
+  },
+  uti_kidney: {
+    symptoms: ["kidney infection","pyelonephritis","back pain fever","flank pain fever","high fever urinary","chills with urinary symptoms"],
+    advice: "Kidney infection (pyelonephritis) is a serious UTI that requires prompt treatment.\n\n**This is more serious than a bladder infection and needs medical attention.**\n\n**While awaiting/during treatment:**\n• Take prescribed antibiotics — full course (7-14 days) as directed\n• Drink 3+ litres of water daily to flush kidneys\n• Paracetamol for fever and pain\n• Rest\n• Avoid caffeinated drinks and alcohol\n• Monitor temperature daily\n\n**Prevention (once recovered):**\n• Stay well hydrated always\n• Urinate after sexual activity\n• Wipe front-to-back hygiene practice",
+    when: "Seek IMMEDIATE medical care — kidney infections always require antibiotics. Don't try to self-treat. Hospitalisation may be needed for severe cases."
+  },
+  sunburn: {
+    symptoms: ["sunburn","burnt skin","sun damage","red painful skin sun","peeling skin","sun rash"],
+    advice: "Sunburn is skin damage from UV radiation.\n\n**Immediate care:**\n• Get out of the sun and stay cool\n• Apply cool (not ice-cold) compress or take cool bath\n• Aloe vera gel is excellent — refrigerate for extra cooling\n• Moisturise with fragrance-free lotion (not petroleum jelly while blistering)\n• Stay very hydrated — sunburn draws fluid to skin surface\n• Ibuprofen reduces pain and inflammation\n• Loose, soft clothing over affected areas\n\n**Don't:**\n• Pop blisters\n• Apply butter, toothpaste, or ice directly\n• Return to sun without SPF 50+",
+    when: "Seek medical care if: blistering over large area, severe pain, fever, confusion, or signs of dehydration."
+  },
+  tuberculosis: {
+    symptoms: ["tuberculosis","tb","tb cough","persistent cough blood","night sweats weight loss cough","mycobacterium","pulmonary tb","cough for months"],
+    advice: "Tuberculosis (TB) is a serious bacterial infection mainly affecting lungs — treatable with the right medication.\n\n**Important notes:**\n• TB requires 6-9 months of antibiotic treatment (DOTS program in India — free treatment)\n• Completing the full course is critical — stopping early causes drug-resistant TB\n• Take all medications exactly as prescribed\n• Rest and adequate nutrition during treatment\n• Cover mouth when coughing/sneezing\n• Ventilate your home — open windows\n• Close contacts should be tested\n\n**DOTS (Directly Observed Treatment, Short-course):** Available free at government hospitals in India.",
+    when: "If you suspect TB — see a doctor PROMPTLY. Early treatment prevents spread and complications. Untreated TB is dangerous."
+  },
+  depression2: {
+    symptoms: ["bipolar","bipolar disorder","mood swings extreme","mania","manic episode","extreme high mood","excessive energy no sleep","grandiosity"],
+    advice: "Bipolar disorder involves alternating episodes of mania (extreme highs) and depression.\n\n**Understanding episodes:**\n• Mania: extremely elevated mood, reduced need for sleep, impulsive decisions, grandiose thinking\n• Hypomania: milder form\n• Depression: as in major depression\n\n**Management:**\n• Mood stabilisers (Lithium, Valproate, Lamotrigine) — take consistently\n• Regular sleep schedule is CRITICAL — sleep disruption can trigger episodes\n• Track your mood daily (apps: Daylio, Mood Tracker)\n• Avoid alcohol and recreational drugs\n• Build a support network\n• Therapy (CBT, IPSRT) alongside medication",
+    when: "Seek URGENT psychiatric care during a manic episode — especially if reckless behaviour, no sleep for days, or psychotic features occur."
+  },
+  acne: {
+    symptoms: ["acne","pimples","blackheads","whiteheads","oily skin breakout","cystic acne","hormonal acne","adult acne"],
+    advice: "Acne is caused by clogged pores, excess sebum, bacteria, and inflammation.\n\n**Skincare routine:**\n• Cleanse twice daily with gentle, non-comedogenic cleanser\n• Apply Salicylic Acid (for blackheads/whiteheads) or Benzoyl Peroxide (for inflammatory acne)\n• Non-comedogenic moisturiser (acne-prone skin still needs moisture)\n• SPF 30+ sunscreen daily\n• Never pick or pop pimples — causes scarring\n\n**Lifestyle factors:**\n• Pillow cases — change twice weekly\n• Clean phone screen regularly (it touches your face!)\n• Reduce high-glycaemic foods and dairy if you notice a link\n• Manage stress (stress increases sebum production)\n• Stay hydrated",
+    when: "See a dermatologist for: cystic/nodular acne, acne causing significant scarring, or if OTC products haven't helped after 3 months."
+  },
+  hyperacidity: {
+    symptoms: ["hyperacidity","acidity","gastric pain","stomach burning","acid after eating","sour belching","gas and acidity","bloating gas pain"],
+    advice: "Hyperacidity (excess stomach acid) causes burning, bloating, and discomfort.\n\n**Immediate relief:**\n• Cold milk or a glass of water\n• Antacids (Gelusil, Eno, Digene) for quick relief\n• Chew a few fennel seeds (saunf) after meals\n• Eat a small banana or plain yogurt\n\n**Lifestyle changes:**\n• Eat smaller, more frequent meals\n• Don't skip meals — empty stomach worsens acidity\n• Avoid trigger foods: spicy food, citrus, tomato, fried food, coffee, alcohol, carbonated drinks\n• Don't lie down for 2-3 hours after eating\n• Elevate head of bed slightly\n• Avoid late-night eating\n• Reduce stress",
+    when: "See a doctor if: burning occurs >2 times/week, difficulty swallowing, weight loss, or vomiting blood (could be GERD, ulcer, or more serious condition)."
+  },
+  vitaminD: {
+    symptoms: ["vitamin d deficiency","low vitamin d","bone pain","muscle weakness","bone aches","sunlight deficiency","calcium absorption","weak bones fatigue"],
+    advice: "Vitamin D deficiency is extremely common in India due to indoor lifestyles and covered clothing.\n\n**Symptoms:** Bone pain, muscle weakness, fatigue, frequent infections, depression, hair loss.\n\n**Boosting Vitamin D:**\n• Sunlight exposure — 15-20 minutes of midday sun on arms and legs, 3-4 times/week\n• Dietary sources: fatty fish (salmon, sardines), egg yolks, fortified milk\n• Supplementation: Vitamin D3 (Cholecalciferol) 1000-2000 IU daily for most adults\n• Pair with Vitamin K2 (helps calcium go to bones, not arteries)\n• Calcium and Vitamin D work together — ensure adequate calcium intake",
+    when: "Get blood 25-OH Vitamin D level tested. See a doctor if severely deficient (<20 ng/mL) — higher dose supplementation needed."
+  },
+  diarrhea: {
+    symptoms: ["diarrhea","loose motions","watery stools","loose stool","stomach upset","running stomach","diarrhoea"],
+    advice: "Diarrhoea is usually self-limiting but dehydration is the main risk.\n\n**Most important — stay hydrated:**\n• ORS (Oral Rehydration Salts) — best solution: dissolve 1 packet in 1 litre boiled water\n• Or make at home: 1 litre water + 6 tsp sugar + 1/2 tsp salt\n• Sip frequently in small amounts if vomiting too\n• Continue eating if able: BRAT diet (Bananas, Rice, Applesauce, Toast), curd\n• Avoid: dairy (except curd), spicy food, fatty food, raw vegetables, caffeine\n• Probiotics (curd, Yakult) help restore gut bacteria\n• Zinc supplements reduce severity in children",
+    when: "Seek care for: diarrhoea lasting >3 days, blood in stool, high fever, severe abdominal pain, or signs of dehydration (dry mouth, no urination, sunken eyes)."
+  }
+};
+
+// ═══════════════════════════════════════════════════
+//  CHAT STATE
+// ═══════════════════════════════════════════════════
+
+let chatSessions = JSON.parse(localStorage.getItem('medibot_sessions') || '[]');
+let currentSessionId = null;
+let isTyping = false;
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function getOrCreateSession() {
+  if (!currentSessionId) {
+    currentSessionId = generateId();
+    chatSessions.unshift({ id: currentSessionId, title: 'New Conversation', messages: [], created: Date.now() });
+    saveSessions();
+  }
+  return chatSessions.find(s => s.id === currentSessionId);
+}
+
+function getCurrentSession() {
+  return chatSessions.find(s => s.id === currentSessionId);
+}
+
+function saveSessions() {
+  localStorage.setItem('medibot_sessions', JSON.stringify(chatSessions));
+  renderHistoryList();
+}
+
+function startNewChat() {
+  currentSessionId = null;
+  document.getElementById('messages-area').innerHTML = '';
+  document.getElementById('chat-title').textContent = 'New Conversation';
+  showWelcome();
+  closeSidebar();
+}
+
+function loadSession(id) {
+  currentSessionId = id;
+  const session = getCurrentSession();
+  if (!session) return;
+  document.getElementById('chat-title').textContent = session.title;
+  const area = document.getElementById('messages-area');
+  area.innerHTML = '';
+  if (session.messages.length === 0) { showWelcome(); }
+  else { session.messages.forEach(msg => renderMessage(msg.role, msg.content, msg.time, false)); }
+  area.scrollTop = area.scrollHeight;
+  closeSidebar();
+}
+
+function deleteSession(id, e) {
+  e.stopPropagation();
+  chatSessions = chatSessions.filter(s => s.id !== id);
+  localStorage.setItem('medibot_sessions', JSON.stringify(chatSessions));
+  if (currentSessionId === id) startNewChat();
+  renderHistoryList();
+}
+
+function renderHistoryList() {
+  const list = document.getElementById('history-list');
+  if (!chatSessions.length) {
+    list.innerHTML = '<div class="no-history">No chats yet.<br>Start a conversation!</div>';
+    return;
+  }
+  list.innerHTML = chatSessions.map(s => {
+    const date = new Date(s.created);
+    const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const icon = getSessionIcon(s.title);
+    return `<div class="history-item ${s.id === currentSessionId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+      <span class="h-icon">${icon}</span>
+      <span class="h-title">${escHtml(s.title)}</span>
+      <span class="h-date">${dateStr}</span>
+      <button class="delete-btn" onclick="deleteSession('${s.id}', event)" title="Delete">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function getSessionIcon(title) {
+  const t = title.toLowerCase();
+  if (t.includes('recipe') || t.includes('food') || t.includes('meal') || t.includes('cook')) return '🍽️';
+  if (t.includes('joke') || t.includes('funny')) return '😄';
+  return '🩺';
+}
+
+// ═══════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════
+
+function showWelcome() {
+  const area = document.getElementById('messages-area');
+  area.innerHTML = `
+  <div class="welcome-screen fade-in" id="welcome-screen">
+    <div class="welcome-icon">🏥</div>
+    <div>
+      <div class="welcome-title">Hi, I'm MediBot!</div>
+      <div class="welcome-sub" style="margin-top:8px">Your intelligent health companion. Get symptom advice, explore 95+ recipes, check your BMI, or find diet tips for any condition.</div>
+    </div>
+    <div class="categories">
+      <div class="category-card" onclick="sendExample('I have a headache and fever')">
+        <div class="cat-icon">🩺</div>
+        <div class="cat-name">Doctor Assistant</div>
+        <div class="cat-desc">Describe symptoms for detailed health advice, severity ratings & diet tips</div>
+      </div>
+      <div class="category-card" onclick="sendExample('Find me a paneer recipe')">
+        <div class="cat-icon">🍽️</div>
+        <div class="cat-name">Recipe Finder</div>
+        <div class="cat-desc">95+ recipes — Indian, Italian, Asian & more with ingredients & steps</div>
+      </div>
+      <div class="category-card" onclick="sendExample('Calculate my BMI')">
+        <div class="cat-icon">⚖️</div>
+        <div class="cat-name">BMI Calculator</div>
+        <div class="cat-desc">Know your Body Mass Index and get personalised health tips</div>
+      </div>
+      <div class="category-card" onclick="sendExample('What foods should I eat for diabetes?')">
+        <div class="cat-icon">🥗</div>
+        <div class="cat-name">Diet & Nutrition</div>
+        <div class="cat-desc">Condition-specific diet guidance and healthy eating advice</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatTime() {
+  return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderMessage(role, htmlContent, time, animate = true) {
+  const area = document.getElementById('messages-area');
+  const ws = document.getElementById('welcome-screen');
+  if (ws) ws.remove();
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  div.innerHTML = `
+    <div class="avatar ${role === 'bot' ? 'bot-avatar' : 'user-avatar'}">
+      ${role === 'bot' ? '🤖' : '👤'}
+    </div>
+    <div class="bubble-wrap">
+      <div class="bubble">${htmlContent}</div>
+      <div class="bubble-time">${time || formatTime()}</div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById('messages-area');
+  const ws = document.getElementById('welcome-screen');
+  if (ws) ws.remove();
+  const div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.className = 'typing-indicator';
+  div.innerHTML = `<div class="avatar bot-avatar">🤖</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+// ═══════════════════════════════════════════════════
+//  DIET TIPS & RELATED RECIPES PER CONDITION
+// ═══════════════════════════════════════════════════
+
+const DIET_TIPS = {
+  headache: { foods: ["Water & hydrating fruits (watermelon, cucumber)", "Magnesium-rich foods: spinach, almonds, pumpkin seeds", "Ginger tea", "Bananas (potassium)"], avoid: ["Caffeine (withdrawal can cause headaches)", "Alcohol", "Processed/aged cheese", "Skipping meals"] },
+  fever: { foods: ["ORS / electrolyte drinks", "Coconut water", "Clear soups and broths", "Soft khichdi, curd rice", "Fresh fruit juices"], avoid: ["Oily, fried, spicy food", "Caffeine and alcohol", "Raw salads"] },
+  cough: { foods: ["Honey in warm water", "Ginger-turmeric milk (haldi doodh)", "Tulsi (basil) tea", "Warm soups", "Steam inhalation"], avoid: ["Cold drinks and ice cream", "Fried food", "Dairy (may thicken mucus)"] },
+  stomach: { foods: ["BRAT diet: Bananas, Rice, Applesauce, Toast", "Curd (probiotics)", "Plain khichdi", "Coconut water", "Clear soups"], avoid: ["Spicy food", "Dairy (except curd)", "Fatty/fried food", "Caffeine", "Raw vegetables"] },
+  sleep: { foods: ["Warm milk with turmeric", "Almonds and walnuts", "Chamomile tea", "Cherries (natural melatonin)", "Banana before bed"], avoid: ["Caffeine after 2 PM", "Alcohol", "Heavy meals at night", "Sugary snacks before bed"] },
+  stress: { foods: ["Dark chocolate (small amount)", "Blueberries and citrus fruits", "Nuts (almonds, walnuts)", "Green tea (L-theanine)", "Oats", "Leafy greens (magnesium)"], avoid: ["Excessive caffeine", "Alcohol", "Processed food", "Refined sugar"] },
+  backPain: { foods: ["Anti-inflammatory: turmeric, ginger", "Omega-3: fish, flaxseeds, walnuts", "Calcium-rich foods: dairy, ragi, sesame", "Vitamin D: eggs, fortified milk, sunlight", "Leafy greens"], avoid: ["Processed food (promotes inflammation)", "Excessive alcohol", "Sugary drinks"] },
+  diabetes: { foods: ["Methi (fenugreek) seeds soaked overnight", "Bitter gourd (karela) juice", "Whole grains: brown rice, jowar, bajra", "Legumes: dal, chana, rajma", "Non-starchy vegetables", "Cinnamon (may help insulin sensitivity)"], avoid: ["White rice, maida, refined carbs", "Sugary drinks and sweets", "Deep-fried food", "Alcohol"] },
+  hypertension: { foods: ["DASH diet: fruits, vegetables, whole grains", "Potassium-rich: banana, orange, spinach, potato", "Low-fat dairy", "Watermelon (contains L-citrulline)", "Garlic (natural blood pressure lowering)"], avoid: ["Excess salt and pickles", "Processed and packaged food", "Alcohol", "Caffeine in excess", "Papad, chips, namkeen"] },
+  allergy: { foods: ["Anti-inflammatory: turmeric, ginger", "Quercetin-rich: onions, apples", "Vitamin C: citrus, amla, guava", "Probiotic curd", "Local honey (may help pollen allergies)"], avoid: ["Known allergen foods", "Processed food with additives", "Alcohol (can worsen symptoms)"] },
+  heartburn: { foods: ["Banana (natural antacid)", "Coconut water", "Cold milk (temporary relief)", "Ginger tea (small amounts)", "Fennel seeds (saunf) after meals", "Oatmeal (absorbs acid)"], avoid: ["Spicy, tomato-based, citrus foods", "Chocolate", "Coffee and alcohol", "Mint (relaxes lower oesophageal sphincter)", "Large meals"] },
+  jointPain: { foods: ["Omega-3: salmon, sardines, flaxseeds", "Turmeric with black pepper (curcumin)", "Ginger tea", "Sour cherries", "Walnuts", "Leafy greens"], avoid: ["Red meat", "Processed food", "Refined sugar", "Fried food", "Excess alcohol"] },
+  skinIssues: { foods: ["Vitamin A: carrots, sweet potato, spinach", "Zinc: pumpkin seeds, chickpeas", "Omega-3: fish, walnuts", "Green tea (antioxidant)", "Probiotic curd (for eczema)", "Adequate water (2–3 litres)"], avoid: ["High-sugar food (worsens acne)", "Dairy (some people with acne)", "Fried and processed food", "Alcohol"] },
+  eyeStrain: { foods: ["Vitamin A: carrots, sweet potato, mangoes", "Lutein: kale, spinach, eggs", "Omega-3: fish, flaxseeds", "Vitamin C: amla, guava, citrus", "Bilberry and blueberries"], avoid: ["Excessive screen use", "Insufficient water intake", "Refined sugar and processed food"] },
+  cold: { foods: ["Vitamin C: amla, guava, citrus, bell pepper", "Zinc: seeds, legumes", "Garlic (antimicrobial)", "Ginger-honey tea", "Chicken soup / clear soup", "Haldi doodh (turmeric milk)"], avoid: ["Cold drinks", "Ice cream", "Fried food", "Alcohol"] },
+  asthma: { foods: ["Fruits rich in Vitamin C (amla, guava)", "Magnesium: pumpkin seeds, leafy greens", "Ginger (anti-inflammatory)", "Turmeric", "Omega-3 (anti-inflammatory)"], avoid: ["Sulfites (wine, dried fruit, pickles)", "Cold drinks", "Known food triggers", "Excess salt"] },
+  thyroid: { foods: ["Selenium: Brazil nuts, eggs, fish", "Zinc: seeds, legumes", "Iodine: iodised salt, dairy, seafood", "Vitamin D: sunlight, eggs, fish", "Anti-inflammatory vegetables"], avoid: ["Raw cruciferous vegetables in excess (if hypothyroid)", "Soy in excess", "Highly processed food", "Alcohol"] },
+  anemia: { foods: ["Iron: spinach, lentils, sesame, red meat", "Vitamin C alongside iron (enhances absorption)", "Folate: leafy greens, legumes", "Vitamin B12: eggs, meat, dairy, fortified foods", "Jaggery (non-haem iron)"], avoid: ["Tea and coffee with meals (blocks iron)", "Excess calcium with iron supplement", "Alcohol"] },
+  diabetes: { foods: ["Methi seeds", "Karela", "Whole grains (jowar, bajra, ragi)", "Dals and legumes", "Non-starchy vegetables"], avoid: ["White rice and maida", "Sugary sweets", "Fried food"] },
+  cholesterol: { foods: ["Oats (beta-glucan lowers LDL)", "Avocado", "Nuts: almonds, walnuts", "Fatty fish (salmon, sardines)", "Olive oil", "Beans and lentils", "Amla (Indian gooseberry)"], avoid: ["Trans fats (vanaspati, packaged snacks)", "Saturated fat (butter, ghee in excess)", "Red meat", "Fried food"] },
+  dengue: { foods: ["Papaya leaf extract (research on platelets)", "Coconut water (electrolytes)", "Pomegranate juice", "Kiwi (Vitamin C)", "ORS", "Khichdi, curd rice (easily digestible)"], avoid: ["Ibuprofen and Aspirin", "Oily and spicy food", "Caffeinated drinks"] },
+  typhoid: { foods: ["ORS and plenty of fluids", "Soft khichdi", "Boiled rice, banana, curd", "Boiled/steamed vegetables", "Coconut water"], avoid: ["Spicy and oily food", "Raw vegetables and salads", "Dairy (initially)", "Caffeinated drinks", "Uncooked food"] },
+  kidney: { foods: ["High water intake (2.5–3 litres)", "Citrate-rich: lemon water, citrus fruits (helps prevent stones)", "Calcium from food sources", "Plant-based protein (easier on kidneys)"], avoid: ["Excess salt", "Excess protein (red meat)", "Oxalate-rich food (spinach, nuts) if prone to calcium-oxalate stones", "Alcohol", "NSAIDs (Ibuprofen)"] },
+  liver: { foods: ["Coffee (reduces liver disease risk — research supported)", "Leafy greens", "Turmeric", "Walnuts", "Berries", "Olive oil", "Garlic"], avoid: ["Alcohol (most important!)", "Processed food and trans fats", "Excess sugar", "Acetaminophen in high doses", "Herbal supplements without medical advice"] },
+  constipation: { foods: ["Psyllium husk (isabgol) in warm water", "Prunes and figs", "Warm lemon water in the morning", "High fibre: whole grains, vegetables, legumes", "Flaxseeds", "Curd (probiotics)"], avoid: ["Low-fibre food: white rice, maida", "Insufficient water", "Dairy in excess", "Processed food"] },
+  gout: { foods: ["Cherry juice (reduces uric acid)", "High water intake (3 litres)", "Low-fat dairy (lowers uric acid)", "Vitamin C foods: citrus, amla", "Coffee (may lower uric acid)", "Complex carbohydrates"], avoid: ["Red meat and organ meats", "Shellfish and anchovies", "Alcohol (especially beer and spirits)", "Sugary drinks (fructose raises uric acid)", "Purine-rich foods"] },
+  osteoporosis: { foods: ["Calcium: dairy, ragi, sesame, tofu, fortified foods", "Vitamin D: sunlight, eggs, fatty fish", "Magnesium: leafy greens, nuts", "Vitamin K: leafy greens, fermented foods", "Protein for bone matrix"], avoid: ["Excess sodium (leaches calcium)", "Excess caffeine (reduces calcium absorption)", "Alcohol", "Smoking"] },
+  obesity: { foods: ["High protein: eggs, legumes, fish, low-fat dairy", "High fibre: vegetables, whole grains, legumes", "Water before meals", "Green tea (may boost metabolism slightly)", "Healthy fats: nuts, olive oil (in moderation)"], avoid: ["Ultra-processed food", "Sugary drinks (biggest contributor to weight gain)", "Refined carbs", "Alcohol", "Mindless snacking"] },
+  acne: { foods: ["Low-GI foods: vegetables, legumes, whole grains", "Zinc: pumpkin seeds, chickpeas", "Omega-3: fish, flaxseeds (anti-inflammatory)", "Probiotic curd", "Green tea", "Adequate water"], avoid: ["High-GI foods: white bread, sugar (spike insulin → more sebum)", "Fried and processed food", "Excess dairy (in some people)"] },
+  vitaminD: { foods: ["Fatty fish: salmon, sardines", "Egg yolks", "Fortified milk and cereals", "Mushrooms (UV-exposed)", "Sunlight exposure 15–20 min daily"], avoid: ["Processed food (nutrient-poor)", "Excess alcohol (reduces Vitamin D metabolism)"] }
+};
+
+const RECIPE_FOR_CONDITION = {
+  diabetes: ["Dal Tadka", "Palak Paneer", "Rasam", "Quinoa Vegetable Bowl", "Lentil Soup", "Chana Masala", "Aloo Gobi", "Keerai Masiyal (Spinach Dal)"],
+  hypertension: ["Dal Tadka", "Rasam", "Aviyal", "Palak Paneer", "Curd Rice (Thayir Sadam)", "Lentil Soup", "Grilled Salmon"],
+  cholesterol: ["Grilled Salmon", "Dal Tadka", "Chana Masala", "Lentil Soup", "Quinoa Vegetable Bowl", "Rasam"],
+  anemia: ["Palak Paneer", "Dal Tadka", "Rajma (Red Kidney Bean Curry)", "Chana Masala", "Keerai Masiyal (Spinach Dal)"],
+  jointPain: ["Rasam", "Dal Tadka", "Lentil Soup", "Grilled Salmon"],
+  backPain: ["Grilled Salmon", "Dal Tadka", "Lentil Soup", "Quinoa Vegetable Bowl"],
+  stress: ["Kheer (Rice Pudding)", "Curd Rice (Thayir Sadam)", "Pongal (Ven Pongal)", "Berry Smoothie Bowl"],
+  sleep: ["Kheer (Rice Pudding)", "Pongal (Ven Pongal)", "Curd Rice (Thayir Sadam)"],
+  stomach: ["Khichdi", "Rasam", "Curd Rice (Thayir Sadam)", "Pongal (Ven Pongal)", "Dal Tadka"],
+  constipation: ["Idli Sambar", "Dal Tadka", "Chana Masala", "Rajma (Red Kidney Bean Curry)", "Pulao (Vegetable Rice)"],
+  fever: ["Rasam", "Dal Tadka", "Curd Rice (Thayir Sadam)", "Lentil Soup"],
+  cold: ["Rasam", "Lentil Soup", "Dal Tadka", "Chicken Biryani"],
+  heartburn: ["Dal Tadka", "Pulao (Vegetable Rice)", "Curd Rice (Thayir Sadam)", "Pongal (Ven Pongal)"],
+  obesity: ["Lentil Soup", "Quinoa Vegetable Bowl", "Chana Masala", "Rasam", "Grilled Salmon", "Avocado Toast with Eggs"],
+  kidney: ["Dal Tadka", "Pulao (Vegetable Rice)", "Rasam", "Curd Rice (Thayir Sadam)"]
+};
+
+const CONDITION_SEVERITY = {
+  headache: "mild", fever: "moderate", cough: "mild", stomach: "moderate",
+  sleep: "mild", stress: "mild", backPain: "mild", diabetes: "moderate",
+  hypertension: "moderate", allergy: "moderate", heartburn: "mild", jointPain: "mild",
+  skinIssues: "mild", eyeStrain: "mild", cold: "mild", asthma: "moderate",
+  thyroid: "moderate", anemia: "moderate", migraine: "moderate", urinaryInfection: "moderate",
+  cholesterol: "moderate", pneumonia: "severe", depression: "moderate", kidney: "severe",
+  liver: "severe", anxiety: "moderate", arthritis: "moderate", dengue: "severe",
+  typhoid: "moderate", malaria: "severe", chickenpox: "moderate", constipation: "mild",
+  foodPoisoning: "moderate", appendicitis: "severe", sinusitis: "mild", eczema: "mild",
+  psoriasis: "mild", gout: "moderate", osteoporosis: "moderate", obesity: "moderate",
+  hypertensionLow: "mild", sprain: "mild", heatstroke: "severe", insomnia: "mild",
+  gallstones: "moderate", anaemia: "moderate", piles: "mild", tuberculosis: "severe",
+  depression2: "severe", acne: "mild", hyperacidity: "mild", vitaminD: "mild", diarrhea: "moderate",
+  uti_kidney: "severe", sunburn: "mild"
+};
+
+// ═══════════════════════════════════════════════════
+//  NUTRITION DATA (approximate per serving)
+// ═══════════════════════════════════════════════════
+
+const NUTRITION = {
+  "Butter Chicken (Murgh Makhani)": { cal: 420, protein: 32, carbs: 14, fat: 26 },
+  "Dal Tadka": { cal: 220, protein: 12, carbs: 34, fat: 6 },
+  "Palak Paneer": { cal: 310, protein: 16, carbs: 10, fat: 22 },
+  "Chana Masala": { cal: 280, protein: 14, carbs: 42, fat: 7 },
+  "Masala Dosa": { cal: 350, protein: 8, carbs: 60, fat: 10 },
+  "Chicken Biryani": { cal: 520, protein: 35, carbs: 62, fat: 14 },
+  "Aloo Gobi": { cal: 180, protein: 5, carbs: 28, fat: 7 },
+  "Rajma (Red Kidney Bean Curry)": { cal: 240, protein: 13, carbs: 38, fat: 5 },
+  "Paneer Butter Masala": { cal: 380, protein: 18, carbs: 16, fat: 26 },
+  "Pav Bhaji": { cal: 420, protein: 10, carbs: 64, fat: 14 },
+  "Classic Pasta Carbonara": { cal: 480, protein: 22, carbs: 52, fat: 20 },
+  "Grilled Salmon": { cal: 320, protein: 38, carbs: 2, fat: 18 },
+  "Caesar Salad": { cal: 220, protein: 18, carbs: 12, fat: 12 },
+  "Lentil Soup": { cal: 190, protein: 11, carbs: 30, fat: 4 },
+  "Quinoa Vegetable Bowl": { cal: 340, protein: 12, carbs: 48, fat: 10 },
+  "Berry Smoothie Bowl": { cal: 280, protein: 6, carbs: 52, fat: 6 }
+};
+
+// ═══════════════════════════════════════════════════
+//  MESSAGE PROCESSING
+// ═══════════════════════════════════════════════════
+
+async function processMessage(text) {
+  const lower = text.toLowerCase();
+
+  // ── BMI Calculator ────────────────────────────
+  if (lower.match(/bmi|body mass index|calculate.*weight|weight.*height/)) {
+    return buildBMITool();
+  }
+
+  // ── Diet advice for condition ──────────────────
+  if (lower.match(/what.*eat|food.*for|diet.*for|eat.*for|nutrition.*for|foods.*good for|good food/)) {
+    for (const [key, data] of Object.entries(HEALTH_ADVICE)) {
+      if (data.symptoms.some(s => lower.includes(s))) {
+        return buildDietResponse(key, data);
+      }
+    }
+    // Generic diet check
+    for (const key of Object.keys(DIET_TIPS)) {
+      if (lower.includes(key.replace(/([A-Z])/g, ' $1').toLowerCase())) {
+        return buildDietResponse(key, HEALTH_ADVICE[key]);
+      }
+    }
+  }
+
+  // ── Health advice ─────────────────────────────
+  for (const [key, data] of Object.entries(HEALTH_ADVICE)) {
+    if (data.symptoms.some(s => lower.includes(s))) {
+      return buildHealthResponse(key, data, text);
+    }
+  }
+
+  // ── Recipe search ─────────────────────────────
+  if (lower.match(/recipe|meal|cook|food|dish|eat|ingredient|make me|prepare|how to make|how do i make/)) {
+    return searchRecipe(text);
+  }
+
+  // ── Online recipe search ─────────────────────
+  if (lower.match(/find.*recipe|search.*recipe/)) {
+    const ingredient = extractIngredient(text);
+    return await fetchRecipeOnline(ingredient);
+  }
+
+  // ── Greeting ──────────────────────────────────
+  if (lower.match(/^(hi|hello|hey|good morning|good afternoon|good evening|howdy|namaste)/)) {
+    const greetings = [
+      "Hello! 👋 I'm MediBot. Describe your symptoms for health advice, or ask me to find a recipe!",
+      "Namaste! 🙏 How can I help you today? Ask about symptoms, recipes, or check your BMI!",
+      "Hi there! 😊 Tell me your symptoms for advice, or say 'find me a biryani recipe'!"
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+
+  // ── Help ──────────────────────────────────────
+  if (lower.match(/help|what can you do|features|capabilities/)) {
+    return `<h3>🏥 What MediBot Can Do</h3>
+<div class="health-card">
+<span class="tag-chip">🩺 Doctor Assistant</span><br>
+Describe symptoms like headache, fever, diabetes, dengue, asthma, thyroid and 60+ conditions — I give detailed advice, severity ratings, and diet tips.<br><br>
+<span class="tag-chip">🍽️ Recipe Finder</span><br>
+95+ recipes including 50+ Indian dishes. Say "butter chicken recipe", "healthy vegetarian meal", "quick breakfast" and more.<br><br>
+<span class="tag-chip">⚖️ BMI Calculator</span><br>
+Say "calculate my BMI" to get an interactive BMI tool with health interpretation.<br><br>
+<span class="tag-chip">🥗 Diet Guidance</span><br>
+Ask "what should I eat for diabetes?" or "foods for blood pressure" for condition-specific diet advice.
+</div>
+<div class="disclaimer-box">⚠️ I provide general wellness information only. Always consult a qualified healthcare professional for medical decisions.</div>`;
+  }
+
+  return `I'm not sure I understood that. Here's what I can help with:<br><br>
+• 🩺 <strong>Symptoms:</strong> "I have a headache" / "I feel anxious"<br>
+• 🍽️ <strong>Recipes:</strong> "Find me a paneer recipe" / "quick breakfast idea"<br>
+• ⚖️ <strong>BMI:</strong> "Calculate my BMI"<br>
+• 🥗 <strong>Diet:</strong> "What should I eat for diabetes?"<br><br>
+Try one of the example prompts on the welcome screen!`;
+}
+
+// ─── BMI Tool ───────────────────────────────────────
+function buildBMITool() {
+  return `<h3>⚖️ BMI Calculator</h3>
+<div class="bmi-tool">
+  <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Enter your height and weight to calculate your Body Mass Index.</p>
+  <div class="bmi-row">
+    <input class="bmi-input" type="number" id="bmi-weight" placeholder="Weight (kg)" min="20" max="300">
+    <input class="bmi-input" type="number" id="bmi-height" placeholder="Height (cm)" min="100" max="250">
+    <button class="bmi-btn" onclick="calcBMI()">Calculate</button>
+  </div>
+  <div id="bmi-result-area" style="display:none">
+    <div class="bmi-result" id="bmi-value">—</div>
+    <div class="bmi-category" id="bmi-cat">—</div>
+    <div id="bmi-advice" style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6"></div>
+  </div>
+  <div style="margin-top:12px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">BMI CATEGORIES</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;font-size:11px;text-align:center">
+      <div style="background:var(--accent2)20;border:1px solid var(--accent2)40;border-radius:6px;padding:5px"><div style="color:var(--accent2);font-weight:600">&lt;18.5</div><div style="color:var(--text3)">Underweight</div></div>
+      <div style="background:var(--accent)20;border:1px solid var(--accent)40;border-radius:6px;padding:5px"><div style="color:var(--accent);font-weight:600">18.5–24.9</div><div style="color:var(--text3)">Normal</div></div>
+      <div style="background:var(--accent4)20;border:1px solid var(--accent4)40;border-radius:6px;padding:5px"><div style="color:var(--accent4);font-weight:600">25–29.9</div><div style="color:var(--text3)">Overweight</div></div>
+      <div style="background:var(--accent3)20;border:1px solid var(--accent3)40;border-radius:6px;padding:5px"><div style="color:var(--accent3);font-weight:600">≥30</div><div style="color:var(--text3)">Obese</div></div>
+    </div>
+  </div>
+</div>
+<div class="disclaimer-box">⚠️ BMI is a screening tool, not a diagnosis. Consult a doctor for a comprehensive health evaluation.</div>`;
+}
+
+function calcBMI() {
+  const w = parseFloat(document.getElementById('bmi-weight').value);
+  const h = parseFloat(document.getElementById('bmi-height').value) / 100;
+  if (!w || !h || w <= 0 || h <= 0) { alert('Please enter valid height and weight.'); return; }
+  const bmi = (w / (h * h)).toFixed(1);
+  let cat, color, advice;
+  if (bmi < 18.5) {
+    cat = '⚠️ Underweight'; color = 'var(--accent2)';
+    advice = 'You may be underweight. Focus on calorie-dense nutritious foods: nuts, dairy, legumes, whole grains. Consider consulting a nutritionist.';
+  } else if (bmi < 25) {
+    cat = '✅ Healthy Weight'; color = 'var(--accent)';
+    advice = 'Great! Maintain your healthy weight with a balanced diet and regular physical activity (150 min/week moderate exercise).';
+  } else if (bmi < 30) {
+    cat = '⚡ Overweight'; color = 'var(--accent4)';
+    advice = 'You are in the overweight range. A modest calorie reduction (500 kcal/day) and increasing physical activity can help. Focus on whole foods and reduce processed food and sugary drinks.';
+  } else {
+    cat = '🔴 Obese'; color = 'var(--accent3)';
+    advice = 'Your BMI is in the obese range. Please consult a doctor. Gradual weight loss through diet and exercise has significant health benefits. Even 5-10% weight loss improves many health markers.';
+  }
+  document.getElementById('bmi-value').style.color = color;
+  document.getElementById('bmi-value').textContent = `BMI: ${bmi}`;
+  document.getElementById('bmi-cat').textContent = cat;
+  document.getElementById('bmi-advice').textContent = advice;
+  document.getElementById('bmi-result-area').style.display = 'block';
+}
+
+// ─── Diet Response ─────────────────────────────────
+function buildDietResponse(key, data) {
+  const diet = DIET_TIPS[key];
+  const relRecipes = RECIPE_FOR_CONDITION[key] || [];
+  const condName = data ? (data.symptoms[0] || key) : key;
+
+  let html = `<h3>🥗 Diet Guide${data ? ` — ${condName.charAt(0).toUpperCase() + condName.slice(1)}` : ''}</h3>`;
+
+  if (diet) {
+    html += `<div class="diet-tip-box">
+<strong>✅ Foods to Eat:</strong>
+${diet.foods.map(f => `<span style="display:block;padding:1px 0">• ${f}</span>`).join('')}
+</div>
+<div class="diet-tip-box" style="background:var(--accent3)10;border-color:var(--accent3)30;margin-top:6px">
+<strong style="color:var(--accent3)">❌ Foods to Avoid:</strong>
+${diet.avoid.map(f => `<span style="display:block;padding:1px 0">• ${f}</span>`).join('')}
+</div>`;
+  } else {
+    html += `<div class="diet-tip-box"><strong>General Advice:</strong>Eat a balanced diet rich in fruits, vegetables, whole grains, and lean proteins. Stay well hydrated.</div>`;
+  }
+
+  if (relRecipes.length) {
+    html += `<div class="related-recipes-box"><strong>🍽️ Recommended Recipes for you:</strong>
+${relRecipes.map(r => `<span class="rel-recipe-chip" onclick="sendExample('Find me ${r} recipe')">${r}</span>`).join('')}
+</div>`;
+  }
+
+  html += `<div class="disclaimer-box">⚠️ This is general dietary information. Please consult a registered dietitian or doctor for personalised advice.</div>`;
+  return html;
+}
+
+// ─── Health Response ────────────────────────────────
+function buildHealthResponse(key, data, _query) {
+  const severity = CONDITION_SEVERITY[key] || 'mild';
+  const diet = DIET_TIPS[key];
+  const relRecipes = RECIPE_FOR_CONDITION[key] || [];
+
+  // Format advice text
+  const lines = data.advice.split('\n').map(l => {
+    if (l.startsWith('**') && l.endsWith('**')) return `<strong style="display:block;margin:8px 0 4px;color:var(--text)">${l.slice(2,-2)}</strong>`;
+    if (l.startsWith('• ')) return `<span style="display:block;padding:2px 0 2px 12px;font-size:13px">• ${l.slice(2)}</span>`;
+    return l ? `<span style="display:block;margin-bottom:4px;font-size:13px">${l}</span>` : '<br>';
+  }).join('');
+
+  // Severity bar
+  const sevColors = { mild: ['mild','',''], moderate: ['mild','moderate',''], severe: ['mild','moderate','severe'] };
+  const dots = sevColors[severity];
+  const sevLabel = severity.charAt(0).toUpperCase() + severity.slice(1);
+
+  let html = `<h3>🩺 Health Advice</h3>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+  <span style="font-size:11px;color:var(--text3)">Severity:</span>
+  <div class="severity-bar" style="margin:0">
+    <div class="severity-dot ${dots[0]}"></div>
+    <div class="severity-dot ${dots[1]}"></div>
+    <div class="severity-dot ${dots[2]}"></div>
+  </div>
+  <span class="severity-label">${sevLabel}</span>
+</div>
+<div class="health-card">${lines}</div>
+<div class="warning-box">🚨 ${data.when}</div>`;
+
+  // Diet tip snippet
+  if (diet) {
+    html += `<div class="diet-tip-box">
+<strong>🥗 Quick Diet Tip for this condition:</strong>
+<span>Eat: ${diet.foods.slice(0,3).join(' · ')}</span><br>
+<span style="color:var(--accent3)">Avoid: ${diet.avoid.slice(0,2).join(' · ')}</span><br>
+<span style="margin-top:4px;display:block"><a href="#" onclick="event.preventDefault();document.getElementById('user-input').value='What should I eat for ${data.symptoms[0]}?';sendMessage();" style="color:var(--accent2);font-size:11px;text-decoration:none">→ Get full diet guide</a></span>
+</div>`;
+  }
+
+  // Related recipes
+  if (relRecipes.length) {
+    html += `<div class="related-recipes-box"><strong>🍽️ Recommended Recipes for this condition:</strong>
+${relRecipes.slice(0,5).map(r => `<span class="rel-recipe-chip" onclick="sendExample('Find me ${r} recipe')">${r}</span>`).join('')}
+</div>`;
+  }
+
+  html += `<div class="disclaimer-box">⚠️ This is general wellness information, not a medical diagnosis. Please see a doctor for proper evaluation and treatment.</div>`;
+  return html;
+}
+
+// ─── Recipe Search ──────────────────────────────────
+function searchRecipe(text) {
+  const lower = text.toLowerCase();
+  const stopWords = new Set(['find','me','a','recipe','food','meal','some','cook','how','make','prepare','want','give','for','the','please','get','show','suggest','recommend','i','to','with','any']);
+  const words = lower.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+
+  let matched = [];
+  for (const recipe of LOCAL_RECIPES) {
+    const allText = (recipe.name + ' ' + recipe.tags.join(' ') + ' ' + recipe.cuisine).toLowerCase();
+    let score = 0;
+    for (const word of words) {
+      if (allText.includes(word)) score += allText.startsWith(word) ? 3 : 1;
+    }
+    if (score > 0) matched.push({ recipe, score });
+  }
+  matched.sort((a, b) => b.score - a.score);
+
+  if (matched.length > 0) {
+    return buildLocalRecipeResponse(matched[0].recipe, matched.slice(1, 5));
+  }
+  const random = LOCAL_RECIPES[Math.floor(Math.random() * LOCAL_RECIPES.length)];
+  return buildLocalRecipeResponse(random, []);
+}
+
+function buildLocalRecipeResponse(r, others) {
+  const ingList = r.ingredients.map(i => `<li>${i}</li>`).join('');
+  const steps = r.steps.map((s, i) => `<span style="display:block;margin-bottom:6px;font-size:13px"><strong style="color:var(--accent);min-width:20px;display:inline-block">${i+1}.</strong> ${s}</span>`).join('');
+  const nutr = NUTRITION[r.name];
+  const nutrHTML = nutr ? `
+<div class="nutrition-grid">
+  <div class="nutr-cell"><div class="nutr-val">${nutr.cal}</div><div class="nutr-label">Calories</div></div>
+  <div class="nutr-cell"><div class="nutr-val">${nutr.protein}g</div><div class="nutr-label">Protein</div></div>
+  <div class="nutr-cell"><div class="nutr-val">${nutr.carbs}g</div><div class="nutr-label">Carbs</div></div>
+  <div class="nutr-cell"><div class="nutr-val">${nutr.fat}g</div><div class="nutr-label">Fat</div></div>
+</div>` : '';
+  const otherSuggestions = others.length ? `<div class="related-recipes-box" style="margin-top:10px"><strong>🔍 Also try:</strong> ${others.map(o => `<span class="rel-recipe-chip" onclick="sendExample('Find me ${o.recipe.name} recipe')">${o.recipe.name}</span>`).join('')}</div>` : '';
+
+  return `<h3>🍽️ Recipe Found</h3>
+<div class="local-recipe-card">
+  <div class="local-recipe-title">${r.name}</div>
+  <div class="local-recipe-meta">
+    <span>🌍 ${r.cuisine}</span>
+    <span>⏱️ ${r.time}</span>
+    <span>👤 ${r.servings} servings</span>
+  </div>
+  ${nutrHTML}
+  <div class="local-recipe-section">
+    <strong>📋 Ingredients:</strong>
+    <ul>${ingList}</ul>
+  </div>
+  <div class="local-recipe-section">
+    <strong>👨‍🍳 Instructions:</strong>
+    ${steps}
+  </div>
+</div>
+${otherSuggestions}
+<p style="font-size:12px;color:var(--text3);margin-top:8px">Tip: Try "healthy vegetarian recipe", "quick breakfast", "South Indian recipe" and more! 😊</p>`;
+}
+
+function extractIngredient(text) {
+  const patterns = [/recipe for (.+)/i, /(.+) recipe/i, /cook (.+)/i, /meal with (.+)/i, /dish with (.+)/i];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) return m[1].trim().split(' ')[0];
+  }
+  const stopWords = ['find','me','a','recipe','food','meal','some','cook','how'];
+  const words = text.toLowerCase().split(/\s+/).filter(w => !stopWords.includes(w));
+  return words[0] || 'chicken';
+}
+
+async function fetchRecipeOnline(ingredient) {
+  try {
+    const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(ingredient)}`);
+    const data = await res.json();
+    const meals = data.meals;
+    if (!meals || meals.length === 0) return searchRecipe(ingredient);
+    const m = meals[Math.floor(Math.random() * Math.min(meals.length, 3))];
+    const ingredients = [];
+    for (let i = 1; i <= 8; i++) {
+      const ing = m[`strIngredient${i}`];
+      const measure = m[`strMeasure${i}`];
+      if (ing && ing.trim()) ingredients.push(`${measure ? measure.trim() + ' ' : ''}${ing}`);
+    }
+    const instructionPreview = m.strInstructions
+      ? m.strInstructions.substring(0, 300).replace(/\r?\n/g, ' ').trim() + '…'
+      : 'See full recipe for detailed instructions.';
+    return `<h3>🍽️ Recipe Found Online</h3>
+<div class="recipe-card">
+  <img src="${m.strMealThumb}" alt="${m.strMeal}" class="recipe-img" onerror="this.style.display='none'">
+  <div class="recipe-body">
+    <div class="recipe-title">${m.strMeal}</div>
+    <div class="recipe-meta">
+      ${m.strCategory ? `<span>🗂️ ${m.strCategory}</span>` : ''}
+      ${m.strArea ? `<span>🌍 ${m.strArea}</span>` : ''}
+      ${m.strYoutube ? `<span>📺 Video available</span>` : ''}
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">${instructionPreview}</p>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px"><strong style="color:var(--text2)">Ingredients:</strong> ${ingredients.join(', ')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="${m.strSource || 'https://www.themealdb.com/meal/' + m.idMeal}" target="_blank" class="recipe-link">📖 Full Recipe →</a>
+      ${m.strYoutube ? `<a href="${m.strYoutube}" target="_blank" class="recipe-link" style="border-color:var(--accent3)44;color:var(--accent3);background:var(--accent3)11">▶️ Watch on YouTube</a>` : ''}
+    </div>
+  </div>
+</div>`;
+  } catch {
+    return searchRecipe(ingredient);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  MAIN SEND FLOW
+// ═══════════════════════════════════════════════════
+
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text || isTyping) return;
+
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const session = getOrCreateSession();
+  const userTime = formatTime();
+
+  if (session.messages.length === 0) {
+    session.title = text.length > 35 ? text.substring(0, 35) + '…' : text;
+    document.getElementById('chat-title').textContent = session.title;
+  }
+
+  session.messages.push({ role: 'user', content: escHtml(text), time: userTime });
+  saveSessions();
+
+  renderMessage('user', escHtml(text), userTime);
+  showTyping();
+
+  await new Promise(r => setTimeout(r, 700 + Math.random() * 500));
+  const response = await processMessage(text);
+  hideTyping();
+
+  const botTime = formatTime();
+  session.messages.push({ role: 'bot', content: response, time: botTime });
+  saveSessions();
+
+  renderMessage('bot', response, botTime);
+  isTyping = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+function sendExample(text) {
+  document.getElementById('user-input').value = text;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('show');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+
+renderHistoryList();
+</script>
+</body>
+</html>
