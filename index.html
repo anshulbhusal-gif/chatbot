@@ -1456,6 +1456,10 @@ let chatSessions = JSON.parse(localStorage.getItem('medibot_sessions') || '[]');
 let currentSessionId = null;
 let isTyping = false;
 
+// ── Groq AI API ──────────────────────────────────────
+const GROQ_API_KEY = "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"; // 🔑 Paste your key from console.groq.com
+const conversationHistory = [];
+
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
@@ -1780,13 +1784,113 @@ Ask "what should I eat for diabetes?" or "foods for blood pressure" for conditio
 <div class="disclaimer-box">⚠️ I provide general wellness information only. Always consult a qualified healthcare professional for medical decisions.</div>`;
   }
 
-  return `I'm not sure I understood that. Here's what I can help with:<br><br>
-• 🩺 <strong>Symptoms:</strong> "I have a headache" / "I feel anxious"<br>
-• 🍽️ <strong>Recipes:</strong> "Find me a paneer recipe" / "quick breakfast idea"<br>
-• ⚖️ <strong>BMI:</strong> "Calculate my BMI"<br>
-• 🥗 <strong>Diet:</strong> "What should I eat for diabetes?"<br><br>
-Try one of the example prompts on the welcome screen!`;
+  // ── AI Fallback (Anthropic Doctor Assistant) ──────────
+  return await callDoctorAI(text);
 }
+
+// ═══════════════════════════════════════════════════
+//  MARKDOWN → HTML CONVERTER
+// ═══════════════════════════════════════════════════
+
+function mdToHtml(text) {
+  // Escape any raw HTML that isn't already intentional
+  // Split into lines for block-level processing
+  const lines = text.split('\n');
+  const output = [];
+  let inList = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Detect bullet lines: -, *, •, –
+    const bulletMatch = line.match(/^[\s]*[-*•–]\s+(.+)/);
+    if (bulletMatch) {
+      if (!inList) { output.push('<ul style="margin:6px 0 6px 16px;padding:0">'); inList = true; }
+      // Process inline within bullet
+      output.push(`<li style="margin-bottom:4px;font-size:13px;line-height:1.6">${inlineFormat(bulletMatch[1])}</li>`);
+      continue;
+    }
+
+    // Close list if we were in one
+    if (inList) { output.push('</ul>'); inList = false; }
+
+    // Heading lines: **text** alone on a line → styled heading
+    if (/^\*\*[^*]+\*\*:?$/.test(line.trim())) {
+      const heading = line.trim().replace(/^\*\*/, '').replace(/\*\*:?$/, '');
+      output.push(`<strong style="display:block;margin:10px 0 4px;color:var(--text);font-size:13px">${heading}</strong>`);
+      continue;
+    }
+
+    // Empty line → spacer
+    if (line.trim() === '') {
+      output.push('<br>');
+      continue;
+    }
+
+    // Regular paragraph line
+    output.push(`<span style="display:block;margin-bottom:4px;font-size:13px;line-height:1.65">${inlineFormat(line)}</span>`);
+  }
+
+  if (inList) output.push('</ul>');
+  return output.join('');
+}
+
+function inlineFormat(text) {
+  // **bold**
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // *italic*
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // `code`
+  text = text.replace(/`(.+?)`/g, '<code style="background:var(--surface3);padding:1px 5px;border-radius:4px;font-size:12px">$1</code>');
+  return text;
+}
+
+// ═══════════════════════════════════════════════════
+//  GROQ AI DOCTOR ASSISTANT
+// ═══════════════════════════════════════════════════
+
+async function callDoctorAI(userText) {
+  conversationHistory.push({ role: "user", content: userText });
+
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        max_tokens: 600,
+        messages: [
+          {
+            role: "system",
+            content: "You are MediBot, a helpful Doctor Assistant. Give concise, safe health advice in a warm and friendly tone. Always remind users to consult a real doctor for diagnosis or prescriptions. Format responses using plain HTML: use <strong> for emphasis, <br> for line breaks, and bullet points with • where helpful. Keep responses under 200 words."
+          },
+          ...conversationHistory
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.error("Groq API error:", data.error);
+      return `<div class="disclaimer-box">⚠️ AI unavailable: ${data.error.message}. Check your Groq API key.</div>`;
+    }
+
+    const raw = data.choices?.[0]?.message?.content || "Sorry, I could not get a response. Please try again.";
+    conversationHistory.push({ role: "assistant", content: raw });
+    const reply = mdToHtml(raw);
+    return reply + `<div class="disclaimer-box" style="margin-top:10px">⚠️ AI-generated advice. Always consult a qualified doctor for medical decisions.</div>`;
+
+  } catch (err) {
+    console.error("Network/fetch error:", err);
+    return `I ran into an error connecting to the AI. Try rephrasing your question, or ask about a specific symptom like "headache" or "fever".`;
+  }
+}
+
+
 
 // ─── BMI Tool ───────────────────────────────────────
 function buildBMITool() {
